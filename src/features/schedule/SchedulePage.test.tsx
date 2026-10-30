@@ -18,4 +18,45 @@ describe('SchedulePage', () => {
       'Sunday Morning Service selected',
     )
   })
+
+  it('shows a loading message without rendering an empty state', () => {
+    render(<SchedulePage initialState={{ status: 'loading' }} />)
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Loading the service schedule',
+    )
+    expect(screen.queryByText('No upcoming services')).not.toBeInTheDocument()
+    expect(screen.queryByRole('article')).not.toBeInTheDocument()
+  })
+
+  it('shows an error and reloads the seeded schedule', async () => {
+    const user = userEvent.setup()
+    render(
+      <SchedulePage
+        initialState={{
+          status: 'error',
+          message: 'The scheduling service did not respond.',
+        }}
+      />,
+    )
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'The scheduling service did not respond.',
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('article')).toHaveLength(2)
+  })
+
+  it('shows an empty state only after an empty schedule is ready', () => {
+    render(<SchedulePage initialState={{ status: 'ready', events: [] }} />)
+
+    expect(
+      screen.getByRole('heading', { name: 'No upcoming services' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
 })
