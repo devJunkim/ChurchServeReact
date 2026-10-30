@@ -1,0 +1,117 @@
+.schedule-page {
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: clamp(3.5rem, 8vw, 6rem) clamp(1.25rem, 5vw, 4rem);
+}
+
+.schedule-page h1 {
+  margin: 0;
+  color: #102a43;
+  font-size: clamp(2.4rem, 6vw, 4.25rem);
+  letter-spacing: -0.045em;
+  line-height: 1;
+}
+
+.schedule-introduction {
+  max-width: 44rem;
+  margin: 1.25rem 0 0;
+  color: #52667a;
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+
+.event-grid {
+  display: grid;
+  margin: 2.5rem 0 0;
+  padding: 0;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  list-style: none;
+}
+
+.event-grid > li {
+  min-width: 0;
+}
+
+.event-card {
+  display: grid;
+  height: 100%;
+  padding: 1.5rem;
+  border: 1px solid #d9e2ec;
+  border-radius: 1.1rem;
+  background: #fff;
+  box-shadow: 0 0.9rem 2.5rem rgb(16 42 67 / 7%);
+  gap: 1.4rem;
+  grid-template-rows: 1fr auto auto;
+}
+
+.event-date {
+  margin: 0 0 0.55rem;
+  color: #087f5b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.event-card h2 {
+  margin: 0;
+  color: #102a43;
+  font-size: 1.35rem;
+  line-height: 1.25;
+}
+
+.event-meta {
+  margin: 0.8rem 0 0;
+  color: #627d98;
+  line-height: 1.5;
+}
+
+.staffing {
+  width: fit-content;
+  margin: 0;
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.staffing.open {
+  background: #fff3bf;
+  color: #8f5b00;
+}
+
+.staffing.complete {
+  background: #d3f9d8;
+  color: #146c2e;
+}
+
+.event-action {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #087f5b;
+  border-radius: 0.65rem;
+  background: #fff;
+  color: #087f5b;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.event-action:hover {
+  background: #e6fcf5;
+}
+
+.event-action:focus-visible {
+  outline: 3px solid #74c0fc;
+  outline-offset: 3px;
+}
+
+.selection-status {
+  margin: 1.25rem 0 0;
+  padding: 0.9rem 1rem;
+  border-left: 4px solid #087f5b;
+  background: #e6fcf5;
+  color: #245448;
+  line-height: 1.5;
+}

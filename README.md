@@ -9,6 +9,12 @@ through one reviewed checkpoint.
 The `part_1` branch establishes an accessible application shell, React Router
 routes, responsive styling, and behavior-focused tests.
 
+## Part 2
+
+The `part_2` branch replaces the schedule placeholder with typed service-event
+data, reusable cards, callback props, parent-owned selection state, responsive
+feature styling, and focused component tests.
+
 ## Run the application
 
 ```bash

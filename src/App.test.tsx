@@ -32,7 +32,7 @@ describe('ChurchServe application shell', () => {
     expect(
       await screen.findByRole('heading', {
         level: 1,
-        name: 'Service schedules are coming next',
+        name: 'Upcoming services',
       }),
     ).toBeVisible()
     expect(screen.getByRole('link', { name: 'ChurchServe home' })).toBeVisible()
