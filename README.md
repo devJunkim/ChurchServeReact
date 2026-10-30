@@ -22,6 +22,12 @@ TypeScript discriminated union. The schedule page renders accessible loading,
 retry, empty, and populated experiences, with behavior-focused tests for each
 user-visible branch.
 
+## Part 4
+
+The `part_4` branch adds readonly volunteer-assignment records, pure validation
+and reducer logic, immutable state transitions, derived open positions, and a
+custom `useAssignmentState` hook with focused domain and hook tests.
+
 ## Run the application
 
 ```bash
