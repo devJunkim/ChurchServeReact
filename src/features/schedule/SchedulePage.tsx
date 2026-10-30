@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { ServiceEventCard } from './ServiceEventCard'
 import type { ServiceEvent } from './serviceEvent'
+import type { ScheduleState } from './scheduleState'
 import './schedule.css'
 
-const events: readonly ServiceEvent[] = [
+const scheduledEvents: readonly ServiceEvent[] = [
   {
     id: 'sunday-2026-11-01',
     title: 'Sunday Morning Service',
@@ -24,9 +25,27 @@ const events: readonly ServiceEvent[] = [
   },
 ]
 
-export function SchedulePage() {
+type SchedulePageProps = {
+  initialState?: ScheduleState
+}
+
+const defaultState: ScheduleState = {
+  status: 'ready',
+  events: scheduledEvents,
+}
+
+export function SchedulePage({
+  initialState = defaultState,
+}: SchedulePageProps) {
+  const [state, setState] = useState<ScheduleState>(initialState)
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
+  const events = state.status === 'ready' ? state.events : []
   const selectedEvent = events.find((event) => event.id === selectedEventId)
+
+  function reloadSchedule() {
+    setSelectedEventId(null)
+    setState(defaultState)
+  }
 
   return (
     <section className="schedule-page" aria-labelledby="schedule-heading">
@@ -37,13 +56,42 @@ export function SchedulePage() {
         Detailed assignments arrive in later parts of the tutorial.
       </p>
 
-      <ul className="event-grid">
-        {events.map((event) => (
-          <li key={event.id}>
-            <ServiceEventCard event={event} onSelect={setSelectedEventId} />
-          </li>
-        ))}
-      </ul>
+      {state.status === 'loading' && (
+        <p className="state-panel" role="status">
+          Loading the service schedule…
+        </p>
+      )}
+
+      {state.status === 'error' && (
+        <section className="state-panel error-state" role="alert">
+          <h2>We could not load the schedule</h2>
+          <p>{state.message}</p>
+          <button
+            className="retry-action"
+            type="button"
+            onClick={reloadSchedule}
+          >
+            Try again
+          </button>
+        </section>
+      )}
+
+      {state.status === 'ready' && events.length === 0 && (
+        <section className="state-panel empty-state">
+          <h2>No upcoming services</h2>
+          <p>New service events will appear here when they are scheduled.</p>
+        </section>
+      )}
+
+      {state.status === 'ready' && events.length > 0 && (
+        <ul className="event-grid">
+          {events.map((event) => (
+            <li key={event.id}>
+              <ServiceEventCard event={event} onSelect={setSelectedEventId} />
+            </li>
+          ))}
+        </ul>
+      )}
 
       {selectedEvent && (
         <p className="selection-status" role="status">

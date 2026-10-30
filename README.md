@@ -15,6 +15,13 @@ The `part_2` branch replaces the schedule placeholder with typed service-event
 data, reusable cards, callback props, parent-owned selection state, responsive
 feature styling, and focused component tests.
 
+## Part 3
+
+The `part_3` branch models loading, error, and ready schedule states with a
+TypeScript discriminated union. The schedule page renders accessible loading,
+retry, empty, and populated experiences, with behavior-focused tests for each
+user-visible branch.
+
 ## Run the application
 
 ```bash

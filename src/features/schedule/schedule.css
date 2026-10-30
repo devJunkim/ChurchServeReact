@@ -20,6 +20,60 @@
   line-height: 1.7;
 }
 
+.state-panel {
+  margin: 2.5rem 0 0;
+  padding: 1.4rem;
+  border: 1px solid #bcccdc;
+  border-radius: 0.9rem;
+  background: #f0f4f8;
+  color: #334e68;
+  line-height: 1.6;
+}
+
+.state-panel h2,
+.state-panel p {
+  margin: 0;
+}
+
+.state-panel p + .retry-action {
+  margin-top: 1rem;
+}
+
+.error-state {
+  border-color: #ffa8a8;
+  background: #fff5f5;
+  color: #862e2e;
+}
+
+.retry-action {
+  padding: 0.7rem 1rem;
+  border: 0;
+  border-radius: 0.65rem;
+  background: #862e2e;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.retry-action:hover {
+  background: #6f2424;
+}
+
+.retry-action:focus-visible {
+  outline: 3px solid #74c0fc;
+  outline-offset: 3px;
+}
+
+.empty-state {
+  border-style: dashed;
+  text-align: center;
+}
+
+.empty-state p {
+  margin-top: 0.35rem;
+}
+
 .event-grid {
   display: grid;
   margin: 2.5rem 0 0;
