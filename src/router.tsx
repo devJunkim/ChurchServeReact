@@ -3,6 +3,7 @@ import { App } from './App'
 import { HomePage } from './pages/HomePage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
+import { SchedulePage } from './features/schedule/SchedulePage'
 
 export const appRoutes: RouteObject[] = [
   {
@@ -12,15 +13,7 @@ export const appRoutes: RouteObject[] = [
       { index: true, Component: HomePage },
       {
         path: 'schedule',
-        element: (
-          <PlaceholderPage
-            eyebrow="Schedule"
-            title="Service schedules are coming next"
-          >
-            Part 2 will turn service events into reusable components with typed
-            props and explicit interaction callbacks.
-          </PlaceholderPage>
-        ),
+        Component: SchedulePage,
       },
       {
         path: 'volunteers',
