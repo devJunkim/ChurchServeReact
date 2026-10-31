@@ -68,7 +68,10 @@ describe('routed schedule workflow', () => {
     expect(repository.listSignals).toHaveLength(1)
 
     await user.click(screen.getByRole('link', { name: 'Create service' }))
-    await user.type(screen.getByLabelText('Service name'), 'Prayer Night')
+    await user.type(
+      await screen.findByLabelText('Service name'),
+      'Prayer Night',
+    )
     await user.type(screen.getByLabelText('Starts'), '2026-11-06T19:00')
     await user.type(screen.getByLabelText('Ends'), '2026-11-06T20:00')
     await user.type(screen.getByLabelText('Location'), 'Chapel')
