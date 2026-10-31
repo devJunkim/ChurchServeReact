@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run frontend verification
+        run: npm run verify
+
+      - name: Restore .NET tools
+        run: dotnet tool restore
+
+      - name: Run API integration tests
+        run: dotnet test server/ChurchServe.Api.Tests/ChurchServe.Api.Tests.csproj --configuration Release
+
+      - name: Check EF Core model drift
+        run: dotnet ef migrations has-pending-model-changes --project server/ChurchServe.Api

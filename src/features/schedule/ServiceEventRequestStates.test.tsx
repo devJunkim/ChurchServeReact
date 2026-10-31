@@ -4,7 +4,10 @@ import { Outlet, RouterProvider, createMemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 import { ServiceEventCreatePage } from './ServiceEventCreatePage'
 import { ServiceEventDetailErrorPage } from './ServiceEventDetailErrorPage'
-import { ServiceEventDetailPage } from './ServiceEventDetailPage'
+import {
+  ServiceEventDetailLoadingPage,
+  ServiceEventDetailPage,
+} from './ServiceEventDetailPage'
 import { ScheduleStoreProvider } from './ScheduleStoreProvider'
 import { ScheduleStore } from './scheduleStore'
 import { createServiceEventDetailLoader } from './serviceEventDetailLoader'
@@ -29,7 +32,10 @@ describe('service event request states', () => {
     await user.click(screen.getByRole('button', { name: 'Try again' }))
 
     expect(
-      await screen.findByRole('heading', { name: 'Sunday Morning Service' }),
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'Sunday Morning Service',
+      }),
     ).toBeVisible()
     expect(findById).toHaveBeenCalledTimes(2)
   })
@@ -133,6 +139,7 @@ function renderRoute(path: string, repository: ServiceEventRepository) {
             path: 'schedule/:eventId',
             loader: createServiceEventDetailLoader(store),
             Component: ServiceEventDetailPage,
+            HydrateFallback: ServiceEventDetailLoadingPage,
             ErrorBoundary: ServiceEventDetailErrorPage,
           },
           {
