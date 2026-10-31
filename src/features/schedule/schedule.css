@@ -20,6 +20,135 @@
   line-height: 1.7;
 }
 
+.event-form-panel {
+  display: grid;
+  margin-top: 2.5rem;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  border: 1px solid #c7ded7;
+  border-radius: 1.1rem;
+  background: #fff;
+  box-shadow: 0 0.9rem 2.5rem rgb(16 42 67 / 6%);
+  gap: 1.5rem 2rem;
+  grid-template-columns: minmax(13rem, 0.7fr) minmax(18rem, 1.3fr);
+}
+
+.form-heading .eyebrow {
+  margin-bottom: 0.45rem;
+}
+
+.form-heading h2 {
+  margin: 0;
+  color: #102a43;
+  font-size: 1.65rem;
+}
+
+.form-heading > p:last-child {
+  margin: 0.75rem 0 0;
+  color: #627d98;
+  line-height: 1.6;
+}
+
+.service-event-form {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-field {
+  display: grid;
+  align-content: start;
+  gap: 0.4rem;
+}
+
+.field-wide {
+  grid-column: 1 / -1;
+}
+
+.form-field label {
+  color: #243b53;
+  font-weight: 750;
+}
+
+.form-field input {
+  width: 100%;
+  min-height: 2.8rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #9fb3c8;
+  border-radius: 0.55rem;
+  background: #fff;
+  color: #102a43;
+  font: inherit;
+}
+
+.form-field input:focus-visible {
+  border-color: #087f5b;
+  outline: 3px solid #b2f2dc;
+  outline-offset: 1px;
+}
+
+.form-field input[aria-invalid='true'] {
+  border-color: #c92a2a;
+}
+
+.field-help,
+.field-error,
+.form-error-summary {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.field-help {
+  color: #627d98;
+}
+
+.field-error,
+.form-error-summary {
+  color: #9b2c2c;
+  font-weight: 650;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.form-actions button {
+  padding: 0.75rem 1.1rem;
+  border: 0;
+  border-radius: 0.65rem;
+  background: #087f5b;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.form-actions button:hover {
+  background: #066649;
+}
+
+.form-actions button:focus-visible {
+  outline: 3px solid #74c0fc;
+  outline-offset: 3px;
+}
+
+.creation-status {
+  margin: 1rem 0 0;
+  padding: 0.85rem 1rem;
+  border-left: 4px solid #087f5b;
+  background: #e6fcf5;
+  color: #245448;
+  line-height: 1.5;
+}
+
+@media (max-width: 46rem) {
+  .event-form-panel,
+  .service-event-form {
+    grid-template-columns: 1fr;
+  }
+}
+
 .state-panel {
   margin: 2.5rem 0 0;
   padding: 1.4rem;

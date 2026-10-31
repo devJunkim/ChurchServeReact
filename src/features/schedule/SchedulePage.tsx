@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { ServiceEventCard } from './ServiceEventCard'
+import { ServiceEventForm } from './ServiceEventForm'
+import type { CreateServiceEventCommand } from './createServiceEvent'
 import type { ServiceEvent } from './serviceEvent'
 import type { ScheduleState } from './scheduleState'
 import './schedule.css'
@@ -27,6 +29,7 @@ const scheduledEvents: readonly ServiceEvent[] = [
 
 type SchedulePageProps = {
   initialState?: ScheduleState
+  eventIdFactory?: () => string
 }
 
 const defaultState: ScheduleState = {
@@ -34,17 +37,38 @@ const defaultState: ScheduleState = {
   events: scheduledEvents,
 }
 
+const createEventId = () => crypto.randomUUID()
+
 export function SchedulePage({
   initialState = defaultState,
+  eventIdFactory = createEventId,
 }: SchedulePageProps) {
   const [state, setState] = useState<ScheduleState>(initialState)
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
+  const [creationMessage, setCreationMessage] = useState('')
   const events = state.status === 'ready' ? state.events : []
   const selectedEvent = events.find((event) => event.id === selectedEventId)
 
   function reloadSchedule() {
     setSelectedEventId(null)
+    setCreationMessage('')
     setState(defaultState)
+  }
+
+  function createServiceEvent(command: CreateServiceEventCommand) {
+    if (state.status !== 'ready') {
+      return
+    }
+
+    const event: ServiceEvent = {
+      id: eventIdFactory(),
+      ...command,
+      requiredPositions: 0,
+      assignedPositions: 0,
+    }
+
+    setState({ status: 'ready', events: [...state.events, event] })
+    setCreationMessage(`${event.title} was added to the schedule.`)
   }
 
   return (
@@ -76,21 +100,34 @@ export function SchedulePage({
         </section>
       )}
 
-      {state.status === 'ready' && events.length === 0 && (
-        <section className="state-panel empty-state">
-          <h2>No upcoming services</h2>
-          <p>New service events will appear here when they are scheduled.</p>
-        </section>
-      )}
+      {state.status === 'ready' && (
+        <>
+          <ServiceEventForm onSubmit={createServiceEvent} />
 
-      {state.status === 'ready' && events.length > 0 && (
-        <ul className="event-grid">
-          {events.map((event) => (
-            <li key={event.id}>
-              <ServiceEventCard event={event} onSelect={setSelectedEventId} />
-            </li>
-          ))}
-        </ul>
+          {creationMessage && (
+            <p className="creation-status" role="status">
+              {creationMessage}
+            </p>
+          )}
+
+          {events.length === 0 ? (
+            <section className="state-panel empty-state">
+              <h2>No upcoming services</h2>
+              <p>Create an event when the next schedule is ready.</p>
+            </section>
+          ) : (
+            <ul className="event-grid">
+              {events.map((event) => (
+                <li key={event.id}>
+                  <ServiceEventCard
+                    event={event}
+                    onSelect={setSelectedEventId}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
 
       {selectedEvent && (
