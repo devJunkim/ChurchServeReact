@@ -1,20 +1,19 @@
-import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
-import { LocalStorageServiceEventRepository } from './features/schedule/localStorageServiceEventRepository'
 import { ServiceEventProvider } from './features/schedule/ServiceEventProvider'
+import type { ServiceEventRepository } from './features/schedule/serviceEventRepository'
 import './styles/app.css'
 
 function navLinkClassName({ isActive }: { isActive: boolean }) {
   return isActive ? 'active' : undefined
 }
 
-export function App() {
-  const [eventRepository] = useState(
-    () => new LocalStorageServiceEventRepository(),
-  )
+type AppProps = {
+  repository: ServiceEventRepository
+}
 
+export function App({ repository }: AppProps) {
   return (
-    <ServiceEventProvider repository={eventRepository}>
+    <ServiceEventProvider repository={repository}>
       <div className="application-shell">
         <a className="skip-link" href="#main-content">
           Skip to main content

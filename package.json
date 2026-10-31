@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "api": "dotnet run --project server/ChurchServe.Api",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test": "vitest run",
