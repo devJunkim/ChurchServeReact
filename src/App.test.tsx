@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { InMemoryServiceEventRepository } from './features/schedule/inMemoryServiceEventRepository'
+import type { ServiceEventRepository } from './features/schedule/serviceEventRepository'
 import type { CurrentUser } from './features/auth/session'
 import type { SessionClient } from './features/auth/sessionClient'
 import { createAppRoutes } from './router'
@@ -25,9 +26,10 @@ function createAuthenticatedSessionClient(): SessionClient {
 function renderRoute(
   path = '/',
   sessionClient = createAuthenticatedSessionClient(),
+  repository: ServiceEventRepository = new InMemoryServiceEventRepository(),
 ) {
   const router = createMemoryRouter(
-    createAppRoutes(new InMemoryServiceEventRepository(), sessionClient),
+    createAppRoutes(repository, sessionClient),
     { initialEntries: [path] },
   )
   render(<RouterProvider router={router} />)
@@ -87,7 +89,13 @@ describe('ChurchServe application shell', () => {
 
   it('navigates from a schedule card to its parameterized detail route', async () => {
     const user = userEvent.setup()
-    const router = renderRoute('/schedule')
+    const repository = new InMemoryServiceEventRepository()
+    const findById = vi.spyOn(repository, 'findById')
+    const router = renderRoute(
+      '/schedule',
+      createAuthenticatedSessionClient(),
+      repository,
+    )
 
     await user.click(
       await screen.findByRole('link', { name: 'View Sunday Morning Service' }),
@@ -99,6 +107,24 @@ describe('ChurchServe application shell', () => {
     expect(router.state.location.pathname).toBe(
       '/schedule/sunday-2026-11-01',
     )
+    expect(findById).not.toHaveBeenCalled()
+  })
+
+  it('clears schedule state after leaving the feature route', async () => {
+    const user = userEvent.setup()
+    const repository = new InMemoryServiceEventRepository()
+    const list = vi.spyOn(repository, 'list')
+    renderRoute('/schedule', createAuthenticatedSessionClient(), repository)
+
+    await screen.findAllByRole('article')
+    await user.click(screen.getByRole('link', { name: 'Volunteers' }))
+    await screen.findByRole('heading', {
+      name: 'Volunteer tools are on the way',
+    })
+    await user.click(screen.getByRole('link', { name: 'Schedule' }))
+
+    expect(await screen.findAllByRole('article')).toHaveLength(2)
+    expect(list).toHaveBeenCalledTimes(2)
   })
 
   it('opens the dedicated service creation route', async () => {

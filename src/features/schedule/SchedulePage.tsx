@@ -1,43 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Link } from 'react-router'
 import { ServiceEventCard } from './ServiceEventCard'
-import type { ScheduleState } from './scheduleState'
-import { isAbortError } from './requestError'
-import { useServiceEventRepository } from './serviceEventContext'
+import {
+  useScheduleSnapshot,
+  useScheduleStore,
+} from './scheduleStoreContext'
 import './schedule.css'
 
 export function SchedulePage() {
-  const repository = useServiceEventRepository()
-  const [state, setState] = useState<ScheduleState>({ status: 'loading' })
-  const [requestVersion, setRequestVersion] = useState(0)
-  const events = state.status === 'ready' ? state.events : []
+  const store = useScheduleStore()
+  const state = useScheduleSnapshot()
 
   useEffect(() => {
-    const controller = new AbortController()
-
-    void repository
-      .list(controller.signal)
-      .then((loadedEvents) => {
-        if (!controller.signal.aborted) {
-          setState({ status: 'ready', events: loadedEvents })
-        }
-      })
-      .catch((error: unknown) => {
-        if (!isAbortError(error)) {
-          setState({
-            status: 'error',
-            message: 'The scheduling service did not respond. Try again.',
-          })
-        }
-      })
-
-    return () => controller.abort()
-  }, [repository, requestVersion])
-
-  function reloadSchedule() {
-    setState({ status: 'loading' })
-    setRequestVersion((version) => version + 1)
-  }
+    void store.load()
+  }, [store])
 
   return (
     <section className="schedule-page" aria-labelledby="schedule-heading">
@@ -61,7 +37,7 @@ export function SchedulePage() {
           <button
             className="retry-action"
             type="button"
-            onClick={reloadSchedule}
+            onClick={() => void store.retry()}
           >
             Try again
           </button>
@@ -70,20 +46,32 @@ export function SchedulePage() {
 
       {state.status === 'ready' && (
         <>
+          <section
+            className="schedule-summary"
+            aria-label="Current schedule summary"
+          >
+            <p>
+              <strong>{state.events.length}</strong> upcoming services
+            </p>
+            <p>
+              <strong>{state.totalOpenPositions}</strong> open positions
+            </p>
+          </section>
+
           <div className="schedule-actions">
             <Link className="primary-link" to="/schedule/new">
               Create service
             </Link>
           </div>
 
-          {events.length === 0 ? (
+          {state.events.length === 0 ? (
             <section className="state-panel empty-state">
               <h2>No upcoming services</h2>
               <p>Create an event when the next schedule is ready.</p>
             </section>
           ) : (
             <ul className="event-grid">
-              {events.map((event) => (
+              {state.events.map((event) => (
                 <li key={event.id}>
                   <ServiceEventCard event={event} />
                 </li>
@@ -92,7 +80,6 @@ export function SchedulePage() {
           )}
         </>
       )}
-
     </section>
   )
 }

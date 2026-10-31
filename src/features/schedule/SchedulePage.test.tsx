@@ -3,18 +3,20 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 import { SchedulePage } from './SchedulePage'
+import { ScheduleStoreProvider } from './ScheduleStoreProvider'
 import { InMemoryServiceEventRepository } from './inMemoryServiceEventRepository'
+import { ScheduleStore } from './scheduleStore'
 import type { ServiceEventRepository } from './serviceEventRepository'
-import { ServiceEventProvider } from './ServiceEventProvider'
 
 function renderSchedule(
   repository: ServiceEventRepository = new InMemoryServiceEventRepository(),
 ) {
+  const store = new ScheduleStore(repository)
   render(
     <MemoryRouter>
-      <ServiceEventProvider repository={repository}>
+      <ScheduleStoreProvider store={store}>
         <SchedulePage />
-      </ServiceEventProvider>
+      </ScheduleStoreProvider>
     </MemoryRouter>,
   )
 }
@@ -27,6 +29,12 @@ describe('SchedulePage', () => {
     expect(
       screen.getByRole('link', { name: 'View Sunday Morning Service' }),
     ).toHaveAttribute('href', '/schedule/sunday-2026-11-01')
+    expect(
+      screen.getByRole('region', { name: 'Current schedule summary' }),
+    ).toHaveTextContent('2 upcoming services')
+    expect(
+      screen.getByRole('region', { name: 'Current schedule summary' }),
+    ).toHaveTextContent('3 open positions')
   })
 
   it('shows a loading message without rendering an empty state', () => {

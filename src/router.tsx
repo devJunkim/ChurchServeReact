@@ -1,4 +1,4 @@
-import { createBrowserRouter, type RouteObject } from 'react-router'
+import { createBrowserRouter, Outlet, type RouteObject } from 'react-router'
 import { App } from './App'
 import { HomePage } from './pages/HomePage'
 import { NotFoundPage } from './pages/NotFoundPage'
@@ -14,15 +14,19 @@ import { SignInPage } from './features/auth/SignInPage'
 import { RequireAuthenticatedSession } from './features/auth/RequireAuthenticatedSession'
 import { createServiceEventDetailLoader } from './features/schedule/serviceEventDetailLoader'
 import { ServiceEventDetailErrorPage } from './features/schedule/ServiceEventDetailErrorPage'
+import { ScheduleStore } from './features/schedule/scheduleStore'
+import { ScheduleStoreProvider } from './features/schedule/ScheduleStoreProvider'
 
 export function createAppRoutes(
   repository: ServiceEventRepository,
   sessionClient: SessionClient,
 ): RouteObject[] {
+  const scheduleStore = new ScheduleStore(repository)
+
   return [
     {
       path: '/',
-      element: <App repository={repository} sessionClient={sessionClient} />,
+      element: <App sessionClient={sessionClient} />,
       children: [
         { index: true, Component: HomePage },
         { path: 'sign-in', Component: SignInPage },
@@ -30,18 +34,27 @@ export function createAppRoutes(
           Component: RequireAuthenticatedSession,
           children: [
             {
-              path: 'schedule',
-              Component: SchedulePage,
-            },
-            {
-              path: 'schedule/new',
-              Component: ServiceEventCreatePage,
-            },
-            {
-              path: 'schedule/:eventId',
-              loader: createServiceEventDetailLoader(repository),
-              Component: ServiceEventDetailPage,
-              ErrorBoundary: ServiceEventDetailErrorPage,
+              element: (
+                <ScheduleStoreProvider store={scheduleStore}>
+                  <Outlet />
+                </ScheduleStoreProvider>
+              ),
+              children: [
+                {
+                  path: 'schedule',
+                  Component: SchedulePage,
+                },
+                {
+                  path: 'schedule/new',
+                  Component: ServiceEventCreatePage,
+                },
+                {
+                  path: 'schedule/:eventId',
+                  loader: createServiceEventDetailLoader(scheduleStore),
+                  Component: ServiceEventDetailPage,
+                  ErrorBoundary: ServiceEventDetailErrorPage,
+                },
+              ],
             },
             {
               path: 'volunteers',
