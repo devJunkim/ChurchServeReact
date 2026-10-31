@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { appRoutes } from './router'
 
 function renderRoute(path = '/') {
@@ -10,6 +10,7 @@ function renderRoute(path = '/') {
   return router
 }
 
+beforeEach(() => localStorage.clear())
 afterEach(() => vi.restoreAllMocks())
 
 describe('ChurchServe application shell', () => {

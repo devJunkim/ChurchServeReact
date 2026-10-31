@@ -46,6 +46,13 @@ The `part_7` branch puts service-event operations behind a repository contract,
 selects an in-memory implementation at the application boundary, bridges its
 immutable snapshots into React, and tests the concrete repository in isolation.
 
+## Part 8
+
+The `part_8` branch adds versioned browser persistence behind the existing
+repository contract, validates stored JSON before trusting it, repairs invalid
+snapshots with seeded data, falls back to in-memory behavior when Web Storage
+is unavailable, and verifies the adapter with focused failure-path tests.
+
 ## Run the application
 
 ```bash

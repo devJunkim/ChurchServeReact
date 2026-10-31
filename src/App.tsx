@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
-import { InMemoryServiceEventRepository } from './features/schedule/inMemoryServiceEventRepository'
+import { LocalStorageServiceEventRepository } from './features/schedule/localStorageServiceEventRepository'
 import { ServiceEventProvider } from './features/schedule/ServiceEventProvider'
 import './styles/app.css'
 
@@ -10,7 +10,7 @@ function navLinkClassName({ isActive }: { isActive: boolean }) {
 
 export function App() {
   const [eventRepository] = useState(
-    () => new InMemoryServiceEventRepository(),
+    () => new LocalStorageServiceEventRepository(),
   )
 
   return (
