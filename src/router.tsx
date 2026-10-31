@@ -1,30 +1,45 @@
-import { createBrowserRouter, Outlet, type RouteObject } from 'react-router'
+import { createBrowserRouter, type RouteObject } from 'react-router'
 import { App } from './App'
+import { HttpSessionClient } from './core/auth/httpSessionClient'
+import { RequireAuthenticatedSession } from './core/auth/RequireAuthenticatedSession'
+import type { SessionClient } from './core/auth/sessionClient'
+import { SignInPage } from './core/auth/SignInPage'
 import { HomePage } from './pages/HomePage'
 import { NotFoundPage } from './pages/NotFoundPage'
-import { PlaceholderPage } from './pages/PlaceholderPage'
-import { SchedulePage } from './features/schedule/SchedulePage'
-import { ServiceEventCreatePage } from './features/schedule/ServiceEventCreatePage'
-import {
-  ServiceEventDetailLoadingPage,
-  ServiceEventDetailPage,
-} from './features/schedule/ServiceEventDetailPage'
-import { HttpServiceEventRepository } from './features/schedule/httpServiceEventRepository'
-import type { ServiceEventRepository } from './features/schedule/serviceEventRepository'
-import { HttpSessionClient } from './features/auth/httpSessionClient'
-import type { SessionClient } from './features/auth/sessionClient'
-import { SignInPage } from './features/auth/SignInPage'
-import { RequireAuthenticatedSession } from './features/auth/RequireAuthenticatedSession'
-import { createServiceEventDetailLoader } from './features/schedule/serviceEventDetailLoader'
-import { ServiceEventDetailErrorPage } from './features/schedule/ServiceEventDetailErrorPage'
-import { ScheduleStore } from './features/schedule/scheduleStore'
-import { ScheduleStoreProvider } from './features/schedule/ScheduleStoreProvider'
+import type {
+  ScheduleFeatureLoader,
+  VolunteerFeatureLoader,
+} from './shared/routing/lazyFeature'
+import { RouteLoadingPage } from './shared/ui/RouteLoadingPage'
 
-export function createAppRoutes(
-  repository: ServiceEventRepository,
-  sessionClient: SessionClient,
-): RouteObject[] {
-  const scheduleStore = new ScheduleStore(repository)
+type AppRouteDependencies = {
+  sessionClient: SessionClient
+  loadScheduleFeature?: ScheduleFeatureLoader
+  loadVolunteerFeature?: VolunteerFeatureLoader
+}
+
+const loadProductionScheduleFeature: ScheduleFeatureLoader = async () => {
+  const feature = await import('./features/schedule/scheduleFeature')
+  return feature.createScheduleFeature()
+}
+
+const loadProductionVolunteerFeature: VolunteerFeatureLoader = async () => {
+  const feature = await import('./features/volunteers/volunteerFeature')
+  return feature.volunteerFeature
+}
+
+function loadOnce<T>(loader: () => Promise<T>) {
+  let pending: Promise<T> | undefined
+  return () => (pending ??= loader())
+}
+
+export function createAppRoutes({
+  sessionClient,
+  loadScheduleFeature = loadProductionScheduleFeature,
+  loadVolunteerFeature = loadProductionVolunteerFeature,
+}: AppRouteDependencies): RouteObject[] {
+  const schedule = loadOnce(loadScheduleFeature)
+  const volunteers = loadOnce(loadVolunteerFeature)
 
   return [
     {
@@ -37,41 +52,30 @@ export function createAppRoutes(
           Component: RequireAuthenticatedSession,
           children: [
             {
-              element: (
-                <ScheduleStoreProvider store={scheduleStore}>
-                  <Outlet />
-                </ScheduleStoreProvider>
-              ),
+              lazy: async () => ({ Component: (await schedule()).Layout }),
+              HydrateFallback: RouteLoadingPage,
               children: [
                 {
                   path: 'schedule',
-                  Component: SchedulePage,
+                  lazy: async () => (await schedule()).list,
+                  HydrateFallback: RouteLoadingPage,
                 },
                 {
                   path: 'schedule/new',
-                  Component: ServiceEventCreatePage,
+                  lazy: async () => (await schedule()).create,
+                  HydrateFallback: RouteLoadingPage,
                 },
                 {
                   path: 'schedule/:eventId',
-                  loader: createServiceEventDetailLoader(scheduleStore),
-                  Component: ServiceEventDetailPage,
-                  HydrateFallback: ServiceEventDetailLoadingPage,
-                  ErrorBoundary: ServiceEventDetailErrorPage,
+                  lazy: async () => (await schedule()).detail,
+                  HydrateFallback: RouteLoadingPage,
                 },
               ],
             },
             {
               path: 'volunteers',
-              element: (
-                <PlaceholderPage
-                  eyebrow="Volunteers"
-                  title="Volunteer tools are on the way"
-                >
-                  Later parts will model availability, ministry eligibility,
-                  search, and assignments without changing this application
-                  shell.
-                </PlaceholderPage>
-              ),
+              lazy: volunteers,
+              HydrateFallback: RouteLoadingPage,
             },
           ],
         },
@@ -83,9 +87,6 @@ export function createAppRoutes(
 
 export function createAppRouter() {
   return createBrowserRouter(
-    createAppRoutes(
-      new HttpServiceEventRepository(),
-      new HttpSessionClient(),
-    ),
+    createAppRoutes({ sessionClient: new HttpSessionClient() }),
   )
 }

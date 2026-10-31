@@ -5,7 +5,7 @@ import {
   browserCookieSource,
   readAntiforgeryToken,
   type CookieSource,
-} from '../auth/antiforgery'
+} from '../../core/auth/antiforgery'
 import {
   InvalidServiceEventResponseError,
   parseServiceEvent,

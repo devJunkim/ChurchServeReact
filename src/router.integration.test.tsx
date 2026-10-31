@@ -2,8 +2,9 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
-import type { CurrentUser } from './features/auth/session'
-import type { SessionClient } from './features/auth/sessionClient'
+import type { CurrentUser } from './core/auth/session'
+import type { SessionClient } from './core/auth/sessionClient'
+import { createScheduleFeatureLoader } from './features/schedule/scheduleFeature'
 import { createAppRoutes } from './router'
 import { FakeServiceEventRepository } from './testing/FakeServiceEventRepository'
 import { buildServiceEvent } from './testing/serviceEventBuilder'
@@ -26,7 +27,10 @@ describe('routed schedule workflow', () => {
       signOut: vi.fn().mockResolvedValue(undefined),
     }
     const router = createMemoryRouter(
-      createAppRoutes(repository, sessionClient),
+      createAppRoutes({
+        sessionClient,
+        loadScheduleFeature: createScheduleFeatureLoader(repository),
+      }),
       { initialEntries: ['/schedule'] },
     )
     render(<RouterProvider router={router} />)
