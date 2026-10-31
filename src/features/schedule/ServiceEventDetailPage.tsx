@@ -54,20 +54,6 @@ export function ServiceEventDetailPage() {
   )
 }
 
-export function ServiceEventDetailLoadingPage() {
-  return (
-    <section className="schedule-route-page" aria-labelledby="detail-heading">
-      <Link className="back-link" to="/schedule">
-        ← Back to schedule
-      </Link>
-      <h1 id="detail-heading">Service event</h1>
-      <p className="state-panel" role="status">
-        Loading the service event…
-      </p>
-    </section>
-  )
-}
-
 function staffingLabel(requiredPositions: number, openPositions: number) {
   if (requiredPositions === 0) {
     return 'No positions configured'

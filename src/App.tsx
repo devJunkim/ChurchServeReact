@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
-import { SessionProvider } from './features/auth/SessionProvider'
-import { useSession } from './features/auth/sessionContext'
-import type { SessionClient } from './features/auth/sessionClient'
+import { SessionProvider } from './core/auth/SessionProvider'
+import { useSession } from './core/auth/sessionContext'
+import type { SessionClient } from './core/auth/sessionClient'
 import './styles/app.css'
 
 function navLinkClassName({ isActive }: { isActive: boolean }) {

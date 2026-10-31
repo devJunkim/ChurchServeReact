@@ -4,8 +4,9 @@ import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { InMemoryServiceEventRepository } from './features/schedule/inMemoryServiceEventRepository'
 import type { ServiceEventRepository } from './features/schedule/serviceEventRepository'
-import type { CurrentUser } from './features/auth/session'
-import type { SessionClient } from './features/auth/sessionClient'
+import type { CurrentUser } from './core/auth/session'
+import type { SessionClient } from './core/auth/sessionClient'
+import { createScheduleFeatureLoader } from './features/schedule/scheduleFeature'
 import { createAppRoutes } from './router'
 
 const currentUser: CurrentUser = {
@@ -29,7 +30,10 @@ function renderRoute(
   repository: ServiceEventRepository = new InMemoryServiceEventRepository(),
 ) {
   const router = createMemoryRouter(
-    createAppRoutes(repository, sessionClient),
+    createAppRoutes({
+      sessionClient,
+      loadScheduleFeature: createScheduleFeatureLoader(repository),
+    }),
     { initialEntries: [path] },
   )
   render(<RouterProvider router={router} />)

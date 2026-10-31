@@ -7,13 +7,14 @@
     "dev": "vite",
     "api": "dotnet run --project server/ChurchServe.Api",
     "build": "tsc -b && vite build",
+    "check:architecture": "node tools/check-architecture.mjs",
     "lint": "oxlint",
     "test": "vitest run",
     "test:ci": "vitest run --reporter=default",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "typecheck": "tsc -b --pretty false && tsc -p tsconfig.test.json --pretty false",
-    "verify": "npm run lint && npm run typecheck && npm run test:ci && npm run build",
+    "verify": "npm run check:architecture && npm run lint && npm run typecheck && npm run test:ci && npm run build",
     "preview": "vite preview"
   },
   "dependencies": {
