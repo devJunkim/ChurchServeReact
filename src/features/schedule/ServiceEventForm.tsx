@@ -9,6 +9,7 @@ import {
 type ServiceEventFormProps = {
   isSubmitting?: boolean
   submissionError?: string
+  onDirtyChange?: (isDirty: boolean) => void
   onSubmit: (command: CreateServiceEventCommand) => Promise<void>
 }
 
@@ -25,6 +26,7 @@ const deviceTimeZone =
 export function ServiceEventForm({
   isSubmitting = false,
   submissionError,
+  onDirtyChange,
   onSubmit,
 }: ServiceEventFormProps) {
   const [values, setValues] = useState<ServiceEventFormValues>(emptyValues)
@@ -34,6 +36,9 @@ export function ServiceEventForm({
   function updateField(field: keyof ServiceEventFormValues, value: string) {
     const nextValues = { ...values, [field]: value }
     setValues(nextValues)
+    onDirtyChange?.(
+      Object.values(nextValues).some((fieldValue) => fieldValue.length > 0),
+    )
 
     if (hasSubmitted) {
       const result = parseServiceEventForm(nextValues)
@@ -57,6 +62,7 @@ export function ServiceEventForm({
     try {
       await onSubmit(result.command)
       setValues(emptyValues)
+      onDirtyChange?.(false)
       setErrors({})
       setHasSubmitted(false)
     } catch {

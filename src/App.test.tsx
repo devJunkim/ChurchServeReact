@@ -166,6 +166,57 @@ describe('ChurchServe application shell', () => {
     expect(router.state.location.pathname).toBe('/schedule')
   })
 
+  it('returns an anonymous user to the protected deep link after sign-in', async () => {
+    const user = userEvent.setup()
+    const sessionClient: SessionClient = {
+      restore: vi.fn().mockResolvedValue(undefined),
+      signIn: vi.fn().mockResolvedValue(currentUser),
+      signOut: vi.fn().mockResolvedValue(undefined),
+    }
+    const router = renderRoute(
+      '/schedule/sunday-2026-11-01',
+      sessionClient,
+    )
+
+    await screen.findByRole('heading', {
+      name: 'Sign in to coordinate ChurchServe',
+    })
+    expect(
+      `${router.state.location.pathname}${router.state.location.search}`,
+    ).toBe('/sign-in?returnTo=%2Fschedule%2Fsunday-2026-11-01')
+
+    await user.type(screen.getByLabelText('Password'), 'local-password')
+    await user.click(screen.getByRole('button', { name: 'Sign in' }))
+
+    expect(
+      await screen.findByRole('heading', { name: 'Sunday Morning Service' }),
+    ).toBeVisible()
+    expect(router.state.location.pathname).toBe(
+      '/schedule/sunday-2026-11-01',
+    )
+  })
+
+  it('falls back to the schedule for an unsafe return target', async () => {
+    const user = userEvent.setup()
+    const sessionClient: SessionClient = {
+      restore: vi.fn().mockResolvedValue(undefined),
+      signIn: vi.fn().mockResolvedValue(currentUser),
+      signOut: vi.fn().mockResolvedValue(undefined),
+    }
+    const router = renderRoute(
+      '/sign-in?returnTo=%2F%2Fevil.example',
+      sessionClient,
+    )
+
+    await user.type(await screen.findByLabelText('Password'), 'local-password')
+    await user.click(screen.getByRole('button', { name: 'Sign in' }))
+
+    expect(
+      await screen.findByRole('heading', { name: 'Upcoming services' }),
+    ).toBeVisible()
+    expect(router.state.location.pathname).toBe('/schedule')
+  })
+
   it('distinguishes an unavailable session from a signed-out session', async () => {
     const user = userEvent.setup()
     const sessionClient: SessionClient = {

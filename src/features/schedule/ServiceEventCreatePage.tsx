@@ -1,5 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  Link,
+  useBeforeUnload,
+  useBlocker,
+  useNavigate,
+} from 'react-router'
 import { ServiceEventForm } from './ServiceEventForm'
 import type { CreateServiceEventCommand } from './createServiceEvent'
 import { isAbortError } from './requestError'
@@ -12,6 +17,30 @@ export function ServiceEventCreatePage() {
   const activeRequest = useRef<AbortController | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submissionError, setSubmissionError] = useState<string>()
+  const [isDirty, setIsDirty] = useState(false)
+  const hasSaved = useRef(false)
+  const blocker = useBlocker(
+    useCallback(
+      ({ currentLocation, nextLocation }) =>
+        isDirty &&
+        !hasSaved.current &&
+        (currentLocation.pathname !== nextLocation.pathname ||
+          currentLocation.search !== nextLocation.search),
+      [isDirty],
+    ),
+  )
+
+  useBeforeUnload(
+    useCallback(
+      (event) => {
+        if (isDirty && !hasSaved.current) {
+          event.preventDefault()
+          event.returnValue = ''
+        }
+      },
+      [isDirty],
+    ),
+  )
 
   useEffect(
     () => () => {
@@ -30,6 +59,8 @@ export function ServiceEventCreatePage() {
     try {
       const event = await repository.create(command, controller.signal)
       controller.signal.throwIfAborted()
+      hasSaved.current = true
+      setIsDirty(false)
       await navigate(`/schedule/${event.id}`)
     } catch (error) {
       if (!isAbortError(error)) {
@@ -61,8 +92,35 @@ export function ServiceEventCreatePage() {
       <ServiceEventForm
         isSubmitting={isSubmitting}
         submissionError={submissionError}
+        onDirtyChange={setIsDirty}
         onSubmit={createServiceEvent}
       />
+
+      {blocker.state === 'blocked' && (
+        <section
+          className="discard-confirmation"
+          role="alertdialog"
+          aria-labelledby="discard-heading"
+          aria-describedby="discard-description"
+        >
+          <h2 id="discard-heading">Discard this service event?</h2>
+          <p id="discard-description">
+            Your unsaved entries will be lost if you leave this page.
+          </p>
+          <div className="discard-actions">
+            <button type="button" onClick={() => blocker.reset()}>
+              Keep editing
+            </button>
+            <button
+              className="danger-action"
+              type="button"
+              onClick={() => blocker.proceed()}
+            >
+              Discard and leave
+            </button>
+          </div>
+        </section>
+      )}
     </section>
   )
 }

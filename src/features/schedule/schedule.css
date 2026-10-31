@@ -251,6 +251,53 @@
   line-height: 1.5;
 }
 
+.discard-confirmation {
+  margin-top: 1.25rem;
+  padding: 1.25rem;
+  border: 1px solid #f08c00;
+  border-radius: 0.9rem;
+  background: #fff9db;
+  color: #5f3c00;
+}
+
+.discard-confirmation h2,
+.discard-confirmation p {
+  margin: 0;
+}
+
+.discard-confirmation p {
+  margin-top: 0.5rem;
+  line-height: 1.5;
+}
+
+.discard-actions {
+  display: flex;
+  margin-top: 1rem;
+  gap: 0.75rem;
+}
+
+.discard-actions button {
+  padding: 0.65rem 0.9rem;
+  border: 1px solid #9a6700;
+  border-radius: 0.55rem;
+  background: #fff;
+  color: #5f3c00;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.discard-actions .danger-action {
+  border-color: #c92a2a;
+  background: #c92a2a;
+  color: #fff;
+}
+
+.discard-actions button:focus-visible {
+  outline: 3px solid #74c0fc;
+  outline-offset: 3px;
+}
+
 @media (max-width: 46rem) {
   .event-form-panel,
   .service-event-form {
