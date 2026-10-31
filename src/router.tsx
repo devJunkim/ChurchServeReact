@@ -6,11 +6,16 @@ import { PlaceholderPage } from './pages/PlaceholderPage'
 import { SchedulePage } from './features/schedule/SchedulePage'
 import { ServiceEventCreatePage } from './features/schedule/ServiceEventCreatePage'
 import { ServiceEventDetailPage } from './features/schedule/ServiceEventDetailPage'
+import { HttpServiceEventRepository } from './features/schedule/httpServiceEventRepository'
+import type { ServiceEventRepository } from './features/schedule/serviceEventRepository'
 
-export const appRoutes: RouteObject[] = [
+export function createAppRoutes(
+  repository: ServiceEventRepository,
+): RouteObject[] {
+  return [
   {
     path: '/',
-    Component: App,
+    element: <App repository={repository} />,
     children: [
       { index: true, Component: HomePage },
       {
@@ -37,8 +42,11 @@ export const appRoutes: RouteObject[] = [
       { path: '*', Component: NotFoundPage },
     ],
   },
-]
+  ]
+}
 
 export function createAppRouter() {
-  return createBrowserRouter(appRoutes)
+  return createBrowserRouter(
+    createAppRoutes(new HttpServiceEventRepository()),
+  )
 }

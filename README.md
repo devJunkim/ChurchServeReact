@@ -60,10 +60,24 @@ abort-aware repository contract. Schedule and detail routes now model real
 request states, retries replace failed requests, creation exposes pending and
 failure feedback, and route changes cancel obsolete work.
 
+## Part 10
+
+The `part_10` branch adds a fetch-based repository with runtime response
+validation and status-aware failures, selects it at the router composition
+boundary, and introduces a minimal ASP.NET Core API with thread-safe in-memory
+storage, server-side validation, REST status codes, and Vite development
+proxying.
+
 ## Run the application
 
 ```bash
 npm install
+npm run api
+```
+
+In a second terminal:
+
+```bash
 npm run dev
 ```
 

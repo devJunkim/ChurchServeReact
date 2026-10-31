@@ -1,16 +1,19 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { appRoutes } from './router'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { InMemoryServiceEventRepository } from './features/schedule/inMemoryServiceEventRepository'
+import { createAppRoutes } from './router'
 
 function renderRoute(path = '/') {
-  const router = createMemoryRouter(appRoutes, { initialEntries: [path] })
+  const router = createMemoryRouter(
+    createAppRoutes(new InMemoryServiceEventRepository()),
+    { initialEntries: [path] },
+  )
   render(<RouterProvider router={router} />)
   return router
 }
 
-beforeEach(() => localStorage.clear())
 afterEach(() => vi.restoreAllMocks())
 
 describe('ChurchServe application shell', () => {
