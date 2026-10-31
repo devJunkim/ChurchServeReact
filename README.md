@@ -34,6 +34,12 @@ The `part_5` branch adds a typed controlled service-event form, pure field and
 time-range validation, accessible error feedback, normalized creation commands,
 immutable schedule updates, and child-to-parent integration tests.
 
+## Part 6
+
+The `part_6` branch adds shared in-memory event state, dedicated creation and
+parameterized detail routes, semantic card links, record-specific missing
+content, programmatic post-submit navigation, and route-level tests.
+
 ## Run the application
 
 ```bash

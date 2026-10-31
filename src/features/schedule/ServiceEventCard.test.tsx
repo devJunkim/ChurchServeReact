@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { MemoryRouter } from 'react-router'
+import { describe, expect, it } from 'vitest'
 import { ServiceEventCard } from './ServiceEventCard'
 import type { ServiceEvent } from './serviceEvent'
 
@@ -14,9 +14,17 @@ const event: ServiceEvent = {
   assignedPositions: 7,
 }
 
+function renderCard(eventValue = event) {
+  render(
+    <MemoryRouter>
+      <ServiceEventCard event={eventValue} />
+    </MemoryRouter>,
+  )
+}
+
 describe('ServiceEventCard', () => {
   it('renders the event and open-position count', () => {
-    render(<ServiceEventCard event={event} onSelect={() => undefined} />)
+    renderCard()
 
     expect(
       screen.getByRole('heading', { name: 'Sunday Morning Service' }),
@@ -25,26 +33,16 @@ describe('ServiceEventCard', () => {
     expect(screen.getByText('3 open positions')).toBeVisible()
   })
 
-  it('reports the event ID when selected', async () => {
-    const user = userEvent.setup()
-    const onSelect = vi.fn()
-    render(<ServiceEventCard event={event} onSelect={onSelect} />)
+  it('links to the event detail route', () => {
+    renderCard()
 
-    await user.click(
-      screen.getByRole('button', { name: 'View Sunday Morning Service' }),
-    )
-
-    expect(onSelect).toHaveBeenCalledOnce()
-    expect(onSelect).toHaveBeenCalledWith('event-1')
+    expect(
+      screen.getByRole('link', { name: 'View Sunday Morning Service' }),
+    ).toHaveAttribute('href', '/schedule/event-1')
   })
 
   it('shows when an event is fully staffed', () => {
-    render(
-      <ServiceEventCard
-        event={{ ...event, assignedPositions: event.requiredPositions }}
-        onSelect={() => undefined}
-      />,
-    )
+    renderCard({ ...event, assignedPositions: event.requiredPositions })
 
     expect(screen.getByText('Fully staffed')).toBeVisible()
     expect(screen.queryByText(/open positions/)).not.toBeInTheDocument()

@@ -1,26 +1,35 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import type { ComponentProps } from 'react'
+import { MemoryRouter } from 'react-router'
 import { describe, expect, it } from 'vitest'
 import { SchedulePage } from './SchedulePage'
+import { ServiceEventProvider } from './serviceEventStore'
+
+function renderSchedule(
+  initialState?: ComponentProps<typeof SchedulePage>['initialState'],
+) {
+  render(
+    <MemoryRouter>
+      <ServiceEventProvider>
+        <SchedulePage initialState={initialState} />
+      </ServiceEventProvider>
+    </MemoryRouter>,
+  )
+}
 
 describe('SchedulePage', () => {
-  it('renders the event collection and owns card selection', async () => {
-    const user = userEvent.setup()
-    render(<SchedulePage />)
+  it('renders the event collection with detail links', () => {
+    renderSchedule()
 
     expect(screen.getAllByRole('article')).toHaveLength(2)
-
-    await user.click(
-      screen.getByRole('button', { name: 'View Sunday Morning Service' }),
-    )
-
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Sunday Morning Service selected',
-    )
+    expect(
+      screen.getByRole('link', { name: 'View Sunday Morning Service' }),
+    ).toHaveAttribute('href', '/schedule/sunday-2026-11-01')
   })
 
   it('shows a loading message without rendering an empty state', () => {
-    render(<SchedulePage initialState={{ status: 'loading' }} />)
+    renderSchedule({ status: 'loading' })
 
     expect(screen.getByRole('status')).toHaveTextContent(
       'Loading the service schedule',
@@ -31,14 +40,10 @@ describe('SchedulePage', () => {
 
   it('shows an error and reloads the seeded schedule', async () => {
     const user = userEvent.setup()
-    render(
-      <SchedulePage
-        initialState={{
-          status: 'error',
-          message: 'The scheduling service did not respond.',
-        }}
-      />,
-    )
+    renderSchedule({
+      status: 'error',
+      message: 'The scheduling service did not respond.',
+    })
 
     expect(screen.getByRole('alert')).toHaveTextContent(
       'The scheduling service did not respond.',
@@ -51,7 +56,7 @@ describe('SchedulePage', () => {
   })
 
   it('shows an empty state only after an empty schedule is ready', () => {
-    render(<SchedulePage initialState={{ status: 'ready', events: [] }} />)
+    renderSchedule({ status: 'ready', events: [] })
 
     expect(
       screen.getByRole('heading', { name: 'No upcoming services' }),
@@ -60,22 +65,12 @@ describe('SchedulePage', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
-  it('adds a valid service event to the in-memory schedule', async () => {
-    const user = userEvent.setup()
-    render(<SchedulePage eventIdFactory={() => 'prayer-night'} />)
+  it('links to the dedicated creation route', () => {
+    renderSchedule()
 
-    await user.type(screen.getByLabelText('Service name'), '  Prayer Night  ')
-    await user.type(screen.getByLabelText('Starts'), '2026-11-06T19:00')
-    await user.type(screen.getByLabelText('Ends'), '2026-11-06T20:00')
-    await user.type(screen.getByLabelText('Location'), '  Chapel  ')
-    await user.click(screen.getByRole('button', { name: 'Add to schedule' }))
-
-    expect(screen.getAllByRole('article')).toHaveLength(3)
-    expect(
-      screen.getByRole('heading', { name: 'Prayer Night' }),
-    ).toBeVisible()
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Prayer Night was added to the schedule.',
+    expect(screen.getByRole('link', { name: 'Create service' })).toHaveAttribute(
+      'href',
+      '/schedule/new',
     )
   })
 })

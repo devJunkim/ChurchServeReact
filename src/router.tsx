@@ -4,6 +4,8 @@ import { HomePage } from './pages/HomePage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
 import { SchedulePage } from './features/schedule/SchedulePage'
+import { ServiceEventCreatePage } from './features/schedule/ServiceEventCreatePage'
+import { ServiceEventDetailPage } from './features/schedule/ServiceEventDetailPage'
 
 export const appRoutes: RouteObject[] = [
   {
@@ -14,6 +16,14 @@ export const appRoutes: RouteObject[] = [
       {
         path: 'schedule',
         Component: SchedulePage,
+      },
+      {
+        path: 'schedule/new',
+        Component: ServiceEventCreatePage,
+      },
+      {
+        path: 'schedule/:eventId',
+        Component: ServiceEventDetailPage,
       },
       {
         path: 'volunteers',
