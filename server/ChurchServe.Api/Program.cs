@@ -90,3 +90,5 @@ static ServiceEvent ToResponse(ServiceEventEntity serviceEvent) =>
         serviceEvent.Location,
         serviceEvent.RequiredPositions,
         serviceEvent.AssignedPositions);
+
+public partial class Program;
