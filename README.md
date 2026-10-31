@@ -82,10 +82,19 @@ API. Each test host applies the production EF Core migration to an isolated
 temporary SQLite database and verifies seeded reads, missing records, validation
 failures, creation semantics, and persistence after a host restart.
 
+## Part 13
+
+The `part_13` branch adds a development-only local identity, encrypted ASP.NET
+Core cookie sessions, antiforgery-protected mutations, authenticated API
+integration tests, explicit React session states, and accessible sign-in and
+sign-out experiences. The tutorial is split into server and React articles so
+each security boundary can be reviewed independently.
+
 ## Run the application
 
 ```bash
 npm install
+dotnet user-secrets set --project server/ChurchServe.Api "Authentication:LocalAccount:Password" "<choose-a-local-password>"
 npm run api
 ```
 
