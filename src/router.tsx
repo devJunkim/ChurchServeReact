@@ -8,45 +8,56 @@ import { ServiceEventCreatePage } from './features/schedule/ServiceEventCreatePa
 import { ServiceEventDetailPage } from './features/schedule/ServiceEventDetailPage'
 import { HttpServiceEventRepository } from './features/schedule/httpServiceEventRepository'
 import type { ServiceEventRepository } from './features/schedule/serviceEventRepository'
+import { HttpSessionClient } from './features/auth/httpSessionClient'
+import type { SessionClient } from './features/auth/sessionClient'
+import { SignInPage } from './features/auth/SignInPage'
 
 export function createAppRoutes(
   repository: ServiceEventRepository,
+  sessionClient: SessionClient,
 ): RouteObject[] {
   return [
-  {
-    path: '/',
-    element: <App repository={repository} />,
-    children: [
-      { index: true, Component: HomePage },
-      {
-        path: 'schedule',
-        Component: SchedulePage,
-      },
-      {
-        path: 'schedule/new',
-        Component: ServiceEventCreatePage,
-      },
-      {
-        path: 'schedule/:eventId',
-        Component: ServiceEventDetailPage,
-      },
-      {
-        path: 'volunteers',
-        element: (
-          <PlaceholderPage eyebrow="Volunteers" title="Volunteer tools are on the way">
-            Later parts will model availability, ministry eligibility, search,
-            and assignments without changing this application shell.
-          </PlaceholderPage>
-        ),
-      },
-      { path: '*', Component: NotFoundPage },
-    ],
-  },
+    {
+      path: '/',
+      element: <App repository={repository} sessionClient={sessionClient} />,
+      children: [
+        { index: true, Component: HomePage },
+        { path: 'sign-in', Component: SignInPage },
+        {
+          path: 'schedule',
+          Component: SchedulePage,
+        },
+        {
+          path: 'schedule/new',
+          Component: ServiceEventCreatePage,
+        },
+        {
+          path: 'schedule/:eventId',
+          Component: ServiceEventDetailPage,
+        },
+        {
+          path: 'volunteers',
+          element: (
+            <PlaceholderPage
+              eyebrow="Volunteers"
+              title="Volunteer tools are on the way"
+            >
+              Later parts will model availability, ministry eligibility,
+              search, and assignments without changing this application shell.
+            </PlaceholderPage>
+          ),
+        },
+        { path: '*', Component: NotFoundPage },
+      ],
+    },
   ]
 }
 
 export function createAppRouter() {
   return createBrowserRouter(
-    createAppRoutes(new HttpServiceEventRepository()),
+    createAppRoutes(
+      new HttpServiceEventRepository(),
+      new HttpSessionClient(),
+    ),
   )
 }

@@ -18,6 +18,7 @@ describe('HttpServiceEventRepository', () => {
       seededServiceEvents,
     )
     expect(fetcher).toHaveBeenCalledWith('/api/service-events', {
+      credentials: 'same-origin',
       signal: controller.signal,
     })
   })
@@ -34,7 +35,7 @@ describe('HttpServiceEventRepository', () => {
     await expect(repository.findById('missing/event')).resolves.toBeUndefined()
     expect(fetcher).toHaveBeenCalledWith(
       '/api/service-events/missing%2Fevent',
-      { signal: undefined },
+      { credentials: 'same-origin', signal: undefined },
     )
   })
 
@@ -94,6 +95,7 @@ describe('HttpServiceEventRepository', () => {
     const repository = new HttpServiceEventRepository(
       '/api/service-events',
       fetcher,
+      () => 'XSRF-TOKEN=test-token',
     )
     const command = {
       title: created.title,
@@ -105,9 +107,32 @@ describe('HttpServiceEventRepository', () => {
     await expect(repository.create(command)).resolves.toEqual(created)
     expect(fetcher).toHaveBeenCalledWith('/api/service-events', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-XSRF-TOKEN': 'test-token',
+      },
       body: JSON.stringify(command),
       signal: undefined,
     })
+  })
+
+  it('refuses to post without an antiforgery token', async () => {
+    const fetcher = vi.fn<typeof fetch>()
+    const repository = new HttpServiceEventRepository(
+      '/api/service-events',
+      fetcher,
+      () => '',
+    )
+
+    await expect(
+      repository.create({
+        title: 'Prayer Night',
+        startsAt: '2026-11-06T19:00:00-05:00',
+        endsAt: '2026-11-06T20:00:00-05:00',
+        location: 'Chapel',
+      }),
+    ).rejects.toMatchObject({ name: 'MissingAntiforgeryTokenError' })
+    expect(fetcher).not.toHaveBeenCalled()
   })
 })

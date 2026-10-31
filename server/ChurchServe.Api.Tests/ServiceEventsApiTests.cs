@@ -90,6 +90,7 @@ public sealed class ServiceEventsApiTests
             using (var firstFactory = new ChurchServeApiFactory(databasePath))
             using (var firstClient = firstFactory.CreateClient())
             {
+                await firstClient.SignInAsync(cancellationToken);
                 var response = await firstClient.PostAsJsonAsync(
                     "/api/service-events",
                     new CreateServiceEventRequest(
@@ -115,6 +116,7 @@ public sealed class ServiceEventsApiTests
             using (var restartedFactory = new ChurchServeApiFactory(databasePath))
             using (var restartedClient = restartedFactory.CreateClient())
             {
+                await restartedClient.SignInAsync(cancellationToken);
                 var persisted =
                     await restartedClient.GetFromJsonAsync<ServiceEventResponse>(
                         $"/api/service-events/{createdId}",
@@ -138,6 +140,7 @@ public sealed class ServiceEventsApiTests
         try
         {
             using var client = factory.CreateClient();
+            await client.SignInAsync(TestContext.Current.CancellationToken);
             await assertion(client);
         }
         finally

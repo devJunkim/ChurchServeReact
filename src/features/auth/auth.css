@@ -1,0 +1,97 @@
+.auth-page {
+  width: min(42rem, 100%);
+  margin: 0 auto;
+  padding: clamp(3rem, 8vw, 6rem) clamp(1.25rem, 5vw, 3rem);
+}
+
+.auth-page h1 {
+  margin: 0;
+  color: #102a43;
+  font-size: clamp(2.3rem, 6vw, 4.2rem);
+  letter-spacing: -0.045em;
+  line-height: 1;
+}
+
+.auth-introduction {
+  margin: 1.5rem 0 0;
+  color: #52667a;
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+
+.auth-form {
+  display: grid;
+  margin-top: 2rem;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  border: 1px solid #cbd5e1;
+  border-radius: 1rem;
+  background: #fff;
+  gap: 0.6rem;
+  box-shadow: 0 1rem 3rem rgb(16 42 67 / 8%);
+}
+
+.auth-form label {
+  margin-top: 0.6rem;
+  color: #243b53;
+  font-weight: 800;
+}
+
+.auth-form input {
+  width: 100%;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid #9fb3c8;
+  border-radius: 0.55rem;
+  color: #102a43;
+  background: #fff;
+}
+
+.auth-form input:focus-visible {
+  border-color: #1683c4;
+  outline: 3px solid rgb(22 131 196 / 20%);
+}
+
+.auth-form button,
+.session-retry,
+.sign-out-action {
+  padding: 0.75rem 1rem;
+  border: 0;
+  border-radius: 0.55rem;
+  background: #087f5b;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.auth-form button {
+  margin-top: 1rem;
+}
+
+.auth-form button:disabled,
+.sign-out-action:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.auth-error {
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border-radius: 0.55rem;
+  color: #9b2c2c;
+  background: #fff5f5;
+  font-weight: 700;
+}
+
+.local-account-note {
+  display: grid;
+  margin-top: 1.25rem;
+  padding: 1rem 1.2rem;
+  border-radius: 0.75rem;
+  color: #486581;
+  background: #eaf6ff;
+  gap: 0.3rem;
+  line-height: 1.5;
+}
+
+.auth-link {
+  margin-top: 2rem;
+}

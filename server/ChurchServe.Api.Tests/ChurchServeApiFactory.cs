@@ -1,3 +1,4 @@
+using ChurchServe.Api.Authentication;
 using ChurchServe.Api.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -30,6 +31,14 @@ public sealed class ChurchServeApiFactory : WebApplicationFactory<Program>
             services.AddDbContext<ChurchServeDbContext>(options =>
                 options.UseSqlite(
                     $"Data Source={DatabasePath};Pooling=False"));
+            services.PostConfigure<LocalAccountOptions>(options =>
+            {
+                options.Id = "test-coordinator";
+                options.Email = AuthenticationTestExtensions.Email;
+                options.DisplayName = "Test Coordinator";
+                options.Password = AuthenticationTestExtensions.Password;
+                options.Role = "scheduler";
+            });
         });
     }
 

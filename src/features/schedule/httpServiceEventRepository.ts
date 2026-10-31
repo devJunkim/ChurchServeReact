@@ -2,6 +2,11 @@ import type { CreateServiceEventCommand } from './createServiceEvent'
 import type { ServiceEvent } from './serviceEvent'
 import type { ServiceEventRepository } from './serviceEventRepository'
 import {
+  browserCookieSource,
+  readAntiforgeryToken,
+  type CookieSource,
+} from '../auth/antiforgery'
+import {
   InvalidServiceEventResponseError,
   parseServiceEvent,
   parseServiceEvents,
@@ -22,17 +27,23 @@ export class ServiceEventHttpError extends Error {
 export class HttpServiceEventRepository implements ServiceEventRepository {
   private readonly baseUrl: string
   private readonly fetcher: Fetch
+  private readonly cookieSource: CookieSource
 
   constructor(
     baseUrl = '/api/service-events',
     fetcher: Fetch = globalThis.fetch,
+    cookieSource: CookieSource = browserCookieSource,
   ) {
     this.baseUrl = baseUrl.replace(/\/$/, '')
     this.fetcher = fetcher
+    this.cookieSource = cookieSource
   }
 
   readonly list = async (signal?: AbortSignal) => {
-    const response = await this.fetcher(this.baseUrl, { signal })
+    const response = await this.fetcher(this.baseUrl, {
+      credentials: 'same-origin',
+      signal,
+    })
     await ensureSuccess(response)
     return parseServiceEvents(await readJson(response))
   }
@@ -40,7 +51,7 @@ export class HttpServiceEventRepository implements ServiceEventRepository {
   readonly findById = async (eventId: string, signal?: AbortSignal) => {
     const response = await this.fetcher(
       `${this.baseUrl}/${encodeURIComponent(eventId)}`,
-      { signal },
+      { credentials: 'same-origin', signal },
     )
 
     if (response.status === 404) {
@@ -57,7 +68,11 @@ export class HttpServiceEventRepository implements ServiceEventRepository {
   ): Promise<ServiceEvent> => {
     const response = await this.fetcher(this.baseUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-XSRF-TOKEN': readAntiforgeryToken(this.cookieSource),
+      },
       body: JSON.stringify(command),
       signal,
     })

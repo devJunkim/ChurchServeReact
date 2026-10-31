@@ -59,6 +59,54 @@
   gap: 0.35rem;
 }
 
+.session-navigation {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.session-navigation > a {
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.5rem;
+  color: #087f5b;
+  font-weight: 800;
+}
+
+.current-user,
+.session-status {
+  color: #52667a;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.session-panel {
+  width: min(42rem, calc(100% - 2.5rem));
+  margin: 4rem auto;
+  padding: 1.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 1rem;
+  background: #fff;
+  color: #486581;
+}
+
+.session-panel h1 {
+  margin-top: 0;
+  color: #102a43;
+}
+
+.session-action-error {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  max-width: 28rem;
+  margin: 0;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  color: #9b2c2c;
+  background: #fff5f5;
+  box-shadow: 0 0.8rem 2rem rgb(16 42 67 / 16%);
+}
+
 .site-header nav a {
   padding: 0.65rem 0.85rem;
   border-radius: 0.5rem;
@@ -215,6 +263,11 @@ main {
     align-items: flex-start;
     flex-direction: column;
     gap: 0.75rem;
+  }
+
+  .session-navigation {
+    align-items: flex-start;
+    flex-wrap: wrap;
   }
 
   .hero {

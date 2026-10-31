@@ -3,11 +3,31 @@ import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { InMemoryServiceEventRepository } from './features/schedule/inMemoryServiceEventRepository'
+import type { CurrentUser } from './features/auth/session'
+import type { SessionClient } from './features/auth/sessionClient'
 import { createAppRoutes } from './router'
 
-function renderRoute(path = '/') {
+const currentUser: CurrentUser = {
+  id: 'coordinator-1',
+  email: 'coordinator@churchserve.local',
+  displayName: 'Demo Coordinator',
+  roles: ['scheduler'],
+}
+
+function createAuthenticatedSessionClient(): SessionClient {
+  return {
+    restore: vi.fn().mockResolvedValue(currentUser),
+    signIn: vi.fn().mockResolvedValue(currentUser),
+    signOut: vi.fn().mockResolvedValue(undefined),
+  }
+}
+
+function renderRoute(
+  path = '/',
+  sessionClient = createAuthenticatedSessionClient(),
+) {
   const router = createMemoryRouter(
-    createAppRoutes(new InMemoryServiceEventRepository()),
+    createAppRoutes(new InMemoryServiceEventRepository(), sessionClient),
     { initialEntries: [path] },
   )
   render(<RouterProvider router={router} />)
@@ -17,11 +37,14 @@ function renderRoute(path = '/') {
 afterEach(() => vi.restoreAllMocks())
 
 describe('ChurchServe application shell', () => {
-  it('renders the application name, primary navigation, and home introduction', () => {
+  it('renders the authenticated navigation and home introduction', async () => {
     renderRoute()
 
     expect(screen.getByRole('link', { name: 'ChurchServe home' })).toBeVisible()
-    expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible()
+    expect(
+      await screen.findByRole('navigation', { name: 'Primary navigation' }),
+    ).toBeVisible()
+    expect(screen.getByText('Demo Coordinator')).toBeVisible()
     expect(
       screen.getByRole('heading', {
         level: 1,
@@ -34,7 +57,9 @@ describe('ChurchServe application shell', () => {
     const user = userEvent.setup()
     renderRoute()
 
-    await user.click(screen.getByRole('link', { name: 'View the schedule' }))
+    await user.click(
+      await screen.findByRole('link', { name: 'View the schedule' }),
+    )
 
     expect(
       await screen.findByRole('heading', {
@@ -45,11 +70,11 @@ describe('ChurchServe application shell', () => {
     expect(screen.getByRole('link', { name: 'ChurchServe home' })).toBeVisible()
   })
 
-  it('provides a recovery link for unknown routes', () => {
+  it('provides a recovery link for unknown routes', async () => {
     renderRoute('/missing')
 
     expect(
-      screen.getByRole('heading', {
+      await screen.findByRole('heading', {
         level: 1,
         name: 'This ChurchServe page does not exist.',
       }),
@@ -76,11 +101,11 @@ describe('ChurchServe application shell', () => {
     )
   })
 
-  it('opens the dedicated service creation route', () => {
+  it('opens the dedicated service creation route', async () => {
     renderRoute('/schedule/new')
 
     expect(
-      screen.getByRole('heading', { name: 'Create a service event' }),
+      await screen.findByRole('heading', { name: 'Create a service event' }),
     ).toBeVisible()
   })
 
@@ -102,6 +127,8 @@ describe('ChurchServe application shell', () => {
     )
     const router = renderRoute('/schedule/new')
 
+    await screen.findByRole('heading', { name: 'Create a service event' })
+
     await user.type(screen.getByLabelText('Service name'), '  Prayer Night  ')
     await user.type(screen.getByLabelText('Starts'), '2026-11-06T19:00')
     await user.type(screen.getByLabelText('Ends'), '2026-11-06T20:00')
@@ -115,5 +142,70 @@ describe('ChurchServe application shell', () => {
     expect(router.state.location.pathname).toBe(
       '/schedule/00000000-0000-4000-8000-000000000006',
     )
+  })
+
+  it('signs in from the anonymous session and opens the schedule', async () => {
+    const user = userEvent.setup()
+    const sessionClient: SessionClient = {
+      restore: vi.fn().mockResolvedValue(undefined),
+      signIn: vi.fn().mockResolvedValue(currentUser),
+      signOut: vi.fn().mockResolvedValue(undefined),
+    }
+    const router = renderRoute('/sign-in', sessionClient)
+
+    await user.type(await screen.findByLabelText('Password'), 'local-password')
+    await user.click(screen.getByRole('button', { name: 'Sign in' }))
+
+    expect(sessionClient.signIn).toHaveBeenCalledWith({
+      email: 'coordinator@churchserve.local',
+      password: 'local-password',
+    })
+    expect(
+      await screen.findByRole('heading', { name: 'Upcoming services' }),
+    ).toBeVisible()
+    expect(router.state.location.pathname).toBe('/schedule')
+  })
+
+  it('distinguishes an unavailable session from a signed-out session', async () => {
+    const user = userEvent.setup()
+    const sessionClient: SessionClient = {
+      restore: vi
+        .fn<SessionClient['restore']>()
+        .mockRejectedValueOnce(new Error('Unavailable'))
+        .mockResolvedValueOnce(currentUser),
+      signIn: vi.fn().mockResolvedValue(currentUser),
+      signOut: vi.fn().mockResolvedValue(undefined),
+    }
+    renderRoute('/', sessionClient)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'We could not verify your session',
+    )
+    expect(screen.queryByRole('link', { name: 'Sign in' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Serve together with a schedule everyone can understand.',
+      }),
+    ).toBeVisible()
+  })
+
+  it('keeps the authenticated UI honest when sign-out fails', async () => {
+    const user = userEvent.setup()
+    const sessionClient: SessionClient = {
+      restore: vi.fn().mockResolvedValue(currentUser),
+      signIn: vi.fn().mockResolvedValue(currentUser),
+      signOut: vi.fn().mockRejectedValue(new Error('Unavailable')),
+    }
+    renderRoute('/', sessionClient)
+
+    await user.click(await screen.findByRole('button', { name: 'Sign out' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'ChurchServe could not sign you out.',
+    )
+    expect(screen.getByText('Demo Coordinator')).toBeVisible()
   })
 })
