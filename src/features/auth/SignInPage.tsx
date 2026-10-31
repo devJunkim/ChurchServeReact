@@ -1,12 +1,15 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { SessionHttpError } from './httpSessionClient'
+import { safeReturnTo } from './safeReturnTo'
 import { useSession } from './sessionContext'
 import './auth.css'
 
 export function SignInPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { state, signIn } = useSession()
+  const returnTo = safeReturnTo(location.search)
   const [email, setEmail] = useState('coordinator@churchserve.local')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -24,7 +27,7 @@ export function SignInPage() {
     try {
       await signIn({ email, password })
       setPassword('')
-      await navigate('/schedule')
+      await navigate(returnTo, { replace: true })
     } catch (error) {
       setErrorMessage(
         error instanceof SessionHttpError && error.status === 401
@@ -44,8 +47,8 @@ export function SignInPage() {
         <p className="auth-introduction">
           Continue as {state.user.displayName}.
         </p>
-        <Link className="primary-action auth-link" to="/schedule">
-          View the schedule
+        <Link className="primary-action auth-link" to={returnTo}>
+          Continue
         </Link>
       </section>
     )

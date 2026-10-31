@@ -1,15 +1,17 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router'
+import { Outlet, RouterProvider, createMemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 import { ServiceEventCreatePage } from './ServiceEventCreatePage'
+import { ServiceEventDetailErrorPage } from './ServiceEventDetailErrorPage'
 import { ServiceEventDetailPage } from './ServiceEventDetailPage'
 import { ServiceEventProvider } from './ServiceEventProvider'
+import { createServiceEventDetailLoader } from './serviceEventDetailLoader'
 import type { ServiceEventRepository } from './serviceEventRepository'
 import { seededServiceEvents } from './seededServiceEvents'
 
 describe('service event request states', () => {
-  it('retries a failed detail request', async () => {
+  it('retries a failed detail loader', async () => {
     const user = userEvent.setup()
     const findById = vi
       .fn<ServiceEventRepository['findById']>()
@@ -17,11 +19,7 @@ describe('service event request states', () => {
       .mockResolvedValueOnce(seededServiceEvents[0])
     const repository = createRepository({ findById })
 
-    renderRoute(
-      '/schedule/sunday-2026-11-01',
-      <Route path="/schedule/:eventId" element={<ServiceEventDetailPage />} />,
-      repository,
-    )
+    renderRoute('/schedule/sunday-2026-11-01', repository)
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'The scheduling service did not respond.',
@@ -35,7 +33,7 @@ describe('service event request states', () => {
     expect(findById).toHaveBeenCalledTimes(2)
   })
 
-  it('aborts an obsolete detail request when the route unmounts', async () => {
+  it('aborts an obsolete detail loader during navigation', async () => {
     let requestSignal: AbortSignal | undefined
     const repository = createRepository({
       findById: (_eventId, signal) => {
@@ -47,16 +45,18 @@ describe('service event request states', () => {
         })
       },
     })
-    const view = renderRoute(
+    const { router } = renderRoute(
       '/schedule/sunday-2026-11-01',
-      <Route path="/schedule/:eventId" element={<ServiceEventDetailPage />} />,
       repository,
     )
 
     await waitFor(() => expect(requestSignal).toBeDefined())
-    view.unmount()
+    await router.navigate('/other')
 
     expect(requestSignal?.aborted).toBe(true)
+    expect(
+      await screen.findByRole('heading', { name: 'Other route' }),
+    ).toBeVisible()
   })
 
   it('preserves entered values when creation fails', async () => {
@@ -64,22 +64,42 @@ describe('service event request states', () => {
     const repository = createRepository({
       create: vi.fn().mockRejectedValue(new Error('Unavailable')),
     })
-    renderRoute(
-      '/schedule/new',
-      <Route path="/schedule/new" element={<ServiceEventCreatePage />} />,
-      repository,
-    )
+    renderRoute('/schedule/new', repository)
 
-    await user.type(screen.getByLabelText('Service name'), 'Prayer Night')
-    await user.type(screen.getByLabelText('Starts'), '2026-11-06T19:00')
-    await user.type(screen.getByLabelText('Ends'), '2026-11-06T20:00')
-    await user.type(screen.getByLabelText('Location'), 'Chapel')
+    await fillRequiredFields(user)
     await user.click(screen.getByRole('button', { name: 'Add to schedule' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'We could not create the service event.',
     )
     expect(screen.getByLabelText('Service name')).toHaveValue('Prayer Night')
+  })
+
+  it('lets the user keep editing or discard a dirty form', async () => {
+    const user = userEvent.setup()
+    const { router } = renderRoute('/schedule/new', createRepository())
+
+    await user.type(screen.getByLabelText('Service name'), 'Prayer Night')
+    void router.navigate('/other')
+
+    expect(await screen.findByRole('alertdialog')).toHaveTextContent(
+      'Your unsaved entries will be lost',
+    )
+    expect(router.state.location.pathname).toBe('/schedule/new')
+
+    await user.click(screen.getByRole('button', { name: 'Keep editing' }))
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Service name')).toHaveValue('Prayer Night')
+
+    void router.navigate('/other')
+    await user.click(
+      await screen.findByRole('button', { name: 'Discard and leave' }),
+    )
+
+    expect(
+      await screen.findByRole('heading', { name: 'Other route' }),
+    ).toBeVisible()
+    expect(router.state.location.pathname).toBe('/other')
   })
 })
 
@@ -96,16 +116,43 @@ function createRepository(
   }
 }
 
-function renderRoute(
-  path: string,
-  route: React.ReactNode,
-  repository: ServiceEventRepository,
-) {
-  return render(
-    <MemoryRouter initialEntries={[path]}>
-      <ServiceEventProvider repository={repository}>
-        <Routes>{route}</Routes>
-      </ServiceEventProvider>
-    </MemoryRouter>,
+function renderRoute(path: string, repository: ServiceEventRepository) {
+  const router = createMemoryRouter(
+    [
+      {
+        path: '/',
+        element: (
+          <ServiceEventProvider repository={repository}>
+            <Outlet />
+          </ServiceEventProvider>
+        ),
+        children: [
+          {
+            path: 'schedule/:eventId',
+            loader: createServiceEventDetailLoader(repository),
+            Component: ServiceEventDetailPage,
+            ErrorBoundary: ServiceEventDetailErrorPage,
+          },
+          {
+            path: 'schedule/new',
+            Component: ServiceEventCreatePage,
+          },
+          {
+            path: 'other',
+            element: <h1>Other route</h1>,
+          },
+        ],
+      },
+    ],
+    { initialEntries: [path] },
   )
+
+  return { router, view: render(<RouterProvider router={router} />) }
+}
+
+async function fillRequiredFields(user: ReturnType<typeof userEvent.setup>) {
+  await user.type(screen.getByLabelText('Service name'), 'Prayer Night')
+  await user.type(screen.getByLabelText('Starts'), '2026-11-06T19:00')
+  await user.type(screen.getByLabelText('Ends'), '2026-11-06T20:00')
+  await user.type(screen.getByLabelText('Location'), 'Chapel')
 }
