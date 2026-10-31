@@ -17,5 +17,31 @@ export type Assignment = {
   readonly id: string
   readonly positionId: string
   readonly volunteerId: string
-  readonly status: 'proposed' | 'accepted' | 'declined'
+  readonly volunteerDisplayName: string
+  readonly status: 'accepted' | 'declined'
+  readonly syncStatus: 'pending' | 'confirmed'
+  readonly clientRequestId?: string
+}
+
+export type AssignmentBoard = {
+  readonly eventId: string
+  readonly eventVersion: number
+  readonly assignedPositions: number
+  readonly positions: readonly MinistryPosition[]
+  readonly volunteers: readonly Volunteer[]
+  readonly assignments: readonly Assignment[]
+}
+
+export type AssignVolunteerCommand = {
+  readonly eventId: string
+  readonly positionId: string
+  readonly volunteerId: string
+  readonly expectedEventVersion: number
+  readonly clientRequestId: string
+}
+
+export type AssignVolunteerResult = {
+  readonly assignment: Assignment
+  readonly eventVersion: number
+  readonly assignedPositions: number
 }

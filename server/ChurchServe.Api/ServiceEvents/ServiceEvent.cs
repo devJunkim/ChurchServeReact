@@ -7,4 +7,5 @@ public sealed record ServiceEvent(
     DateTimeOffset EndsAt,
     string Location,
     int RequiredPositions,
-    int AssignedPositions);
+    int AssignedPositions,
+    int Version);

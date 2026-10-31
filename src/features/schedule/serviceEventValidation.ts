@@ -31,7 +31,9 @@ export function isServiceEvent(value: unknown): value is ServiceEvent {
     endsAt > startsAt &&
     isNonNegativeInteger(value.requiredPositions) &&
     isNonNegativeInteger(value.assignedPositions) &&
-    value.assignedPositions <= value.requiredPositions
+    value.assignedPositions <= value.requiredPositions &&
+    Number.isInteger(value.version) &&
+    Number(value.version) > 0
   )
 }
 

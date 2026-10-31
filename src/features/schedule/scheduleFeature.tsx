@@ -4,6 +4,10 @@ import type {
   ScheduleFeatureLoader,
 } from '../../shared/routing/lazyFeature'
 import { HttpServiceEventRepository } from './httpServiceEventRepository'
+import { AssignmentStore } from './assignmentStore'
+import { AssignmentStoreProvider } from './AssignmentStoreProvider'
+import type { AssignmentRepository } from './assignmentRepository'
+import { HttpAssignmentRepository } from './httpAssignmentRepository'
 import { SchedulePage } from './SchedulePage'
 import { ScheduleStoreProvider } from './ScheduleStoreProvider'
 import { ServiceEventCreatePage } from './ServiceEventCreatePage'
@@ -15,13 +19,21 @@ import { ScheduleStore } from './scheduleStore'
 
 export function createScheduleFeature(
   repository: ServiceEventRepository = new HttpServiceEventRepository(),
+  assignmentRepository: AssignmentRepository = new HttpAssignmentRepository(),
 ): ScheduleFeature {
   const store = new ScheduleStore(repository)
+  const assignmentStore = new AssignmentStore(
+    assignmentRepository,
+    (eventId, assignedPositions, version) =>
+      store.updateStaffing(eventId, assignedPositions, version),
+  )
 
   function ScheduleFeatureLayout() {
     return (
       <ScheduleStoreProvider store={store}>
-        <Outlet />
+        <AssignmentStoreProvider store={assignmentStore}>
+          <Outlet />
+        </AssignmentStoreProvider>
       </ScheduleStoreProvider>
     )
   }
@@ -40,6 +52,7 @@ export function createScheduleFeature(
 
 export function createScheduleFeatureLoader(
   repository: ServiceEventRepository,
+  assignmentRepository: AssignmentRepository,
 ): ScheduleFeatureLoader {
-  return async () => createScheduleFeature(repository)
+  return async () => createScheduleFeature(repository, assignmentRepository)
 }

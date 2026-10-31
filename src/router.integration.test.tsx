@@ -7,6 +7,7 @@ import type { SessionClient } from './core/auth/sessionClient'
 import { createScheduleFeatureLoader } from './features/schedule/scheduleFeature'
 import { createAppRoutes } from './router'
 import { FakeServiceEventRepository } from './testing/FakeServiceEventRepository'
+import { FakeAssignmentRepository } from './testing/FakeAssignmentRepository'
 import { buildServiceEvent } from './testing/serviceEventBuilder'
 
 const currentUser: CurrentUser = {
@@ -29,7 +30,10 @@ describe('routed schedule workflow', () => {
     const router = createMemoryRouter(
       createAppRoutes({
         sessionClient,
-        loadScheduleFeature: createScheduleFeatureLoader(repository),
+        loadScheduleFeature: createScheduleFeatureLoader(
+          repository,
+          new FakeAssignmentRepository(),
+        ),
       }),
       { initialEntries: ['/schedule'] },
     )

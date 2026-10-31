@@ -157,7 +157,8 @@ public sealed class ServiceEventsApiTests
         DateTimeOffset EndsAt,
         string Location,
         int RequiredPositions,
-        int AssignedPositions);
+        int AssignedPositions,
+        int Version);
 
     private sealed record CreateServiceEventRequest(
         string? Title,

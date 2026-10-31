@@ -9,4 +9,5 @@ public sealed class ServiceEventEntity
     public required string Location { get; set; }
     public int RequiredPositions { get; set; }
     public int AssignedPositions { get; set; }
+    public int Version { get; set; } = 1;
 }

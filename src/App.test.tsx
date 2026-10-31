@@ -7,6 +7,7 @@ import type { ServiceEventRepository } from './features/schedule/serviceEventRep
 import type { CurrentUser } from './core/auth/session'
 import type { SessionClient } from './core/auth/sessionClient'
 import { createScheduleFeatureLoader } from './features/schedule/scheduleFeature'
+import { FakeAssignmentRepository } from './testing/FakeAssignmentRepository'
 import { createAppRoutes } from './router'
 
 const currentUser: CurrentUser = {
@@ -32,7 +33,10 @@ function renderRoute(
   const router = createMemoryRouter(
     createAppRoutes({
       sessionClient,
-      loadScheduleFeature: createScheduleFeatureLoader(repository),
+      loadScheduleFeature: createScheduleFeatureLoader(
+        repository,
+        new FakeAssignmentRepository(),
+      ),
     }),
     { initialEntries: [path] },
   )

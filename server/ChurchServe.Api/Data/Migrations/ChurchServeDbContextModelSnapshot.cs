@@ -16,6 +16,80 @@ namespace ChurchServe.Api.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.14");
 
+            modelBuilder.Entity("ChurchServe.Api.Assignments.Assignment", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ClientRequestId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PositionId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("VolunteerId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClientRequestId")
+                        .IsUnique();
+
+                    b.HasIndex("PositionId")
+                        .IsUnique()
+                        .HasFilter("Status <> 'declined'");
+
+                    b.HasIndex("VolunteerId");
+
+                    b.ToTable("Assignments", (string)null);
+                });
+
+            modelBuilder.Entity("ChurchServe.Api.Assignments.MinistryPosition", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("EndsAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Ministry")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RoleName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ServiceEventId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("StartsAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ServiceEventId");
+
+                    b.ToTable("MinistryPositions", (string)null);
+                });
+
             modelBuilder.Entity("ChurchServe.Api.ServiceEvents.ServiceEventEntity", b =>
                 {
                     b.Property<string>("Id")
@@ -44,9 +118,97 @@ namespace ChurchServe.Api.Data.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1);
+
                     b.HasKey("Id");
 
                     b.ToTable("ServiceEvents", (string)null);
+                });
+
+            modelBuilder.Entity("ChurchServe.Api.Volunteers.Volunteer", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Volunteers", (string)null);
+                });
+
+            modelBuilder.Entity("ChurchServe.Api.Volunteers.VolunteerMinistry", b =>
+                {
+                    b.Property<string>("VolunteerId")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Ministry")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("VolunteerId", "Ministry");
+
+                    b.ToTable("VolunteerMinistries", (string)null);
+                });
+
+            modelBuilder.Entity("ChurchServe.Api.Assignments.Assignment", b =>
+                {
+                    b.HasOne("ChurchServe.Api.Assignments.MinistryPosition", "Position")
+                        .WithMany("Assignments")
+                        .HasForeignKey("PositionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ChurchServe.Api.Volunteers.Volunteer", "Volunteer")
+                        .WithMany()
+                        .HasForeignKey("VolunteerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Position");
+
+                    b.Navigation("Volunteer");
+                });
+
+            modelBuilder.Entity("ChurchServe.Api.Assignments.MinistryPosition", b =>
+                {
+                    b.HasOne("ChurchServe.Api.ServiceEvents.ServiceEventEntity", "ServiceEvent")
+                        .WithMany()
+                        .HasForeignKey("ServiceEventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ServiceEvent");
+                });
+
+            modelBuilder.Entity("ChurchServe.Api.Volunteers.VolunteerMinistry", b =>
+                {
+                    b.HasOne("ChurchServe.Api.Volunteers.Volunteer", "Volunteer")
+                        .WithMany("EligibleMinistries")
+                        .HasForeignKey("VolunteerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Volunteer");
+                });
+
+            modelBuilder.Entity("ChurchServe.Api.Assignments.MinistryPosition", b =>
+                {
+                    b.Navigation("Assignments");
+                });
+
+            modelBuilder.Entity("ChurchServe.Api.Volunteers.Volunteer", b =>
+                {
+                    b.Navigation("EligibleMinistries");
                 });
 #pragma warning restore 612, 618
         }
