@@ -5,7 +5,10 @@ import { NotFoundPage } from './pages/NotFoundPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
 import { SchedulePage } from './features/schedule/SchedulePage'
 import { ServiceEventCreatePage } from './features/schedule/ServiceEventCreatePage'
-import { ServiceEventDetailPage } from './features/schedule/ServiceEventDetailPage'
+import {
+  ServiceEventDetailLoadingPage,
+  ServiceEventDetailPage,
+} from './features/schedule/ServiceEventDetailPage'
 import { HttpServiceEventRepository } from './features/schedule/httpServiceEventRepository'
 import type { ServiceEventRepository } from './features/schedule/serviceEventRepository'
 import { HttpSessionClient } from './features/auth/httpSessionClient'
@@ -52,6 +55,7 @@ export function createAppRoutes(
                   path: 'schedule/:eventId',
                   loader: createServiceEventDetailLoader(scheduleStore),
                   Component: ServiceEventDetailPage,
+                  HydrateFallback: ServiceEventDetailLoadingPage,
                   ErrorBoundary: ServiceEventDetailErrorPage,
                 },
               ],

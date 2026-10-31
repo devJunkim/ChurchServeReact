@@ -4,7 +4,10 @@ import { Outlet, RouterProvider, createMemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 import { ServiceEventCreatePage } from './ServiceEventCreatePage'
 import { ServiceEventDetailErrorPage } from './ServiceEventDetailErrorPage'
-import { ServiceEventDetailPage } from './ServiceEventDetailPage'
+import {
+  ServiceEventDetailLoadingPage,
+  ServiceEventDetailPage,
+} from './ServiceEventDetailPage'
 import { ScheduleStoreProvider } from './ScheduleStoreProvider'
 import { ScheduleStore } from './scheduleStore'
 import { createServiceEventDetailLoader } from './serviceEventDetailLoader'
@@ -133,6 +136,7 @@ function renderRoute(path: string, repository: ServiceEventRepository) {
             path: 'schedule/:eventId',
             loader: createServiceEventDetailLoader(store),
             Component: ServiceEventDetailPage,
+            HydrateFallback: ServiceEventDetailLoadingPage,
             ErrorBoundary: ServiceEventDetailErrorPage,
           },
           {
