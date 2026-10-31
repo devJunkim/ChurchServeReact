@@ -4,14 +4,16 @@ import type { ComponentProps } from 'react'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it } from 'vitest'
 import { SchedulePage } from './SchedulePage'
-import { ServiceEventProvider } from './serviceEventStore'
+import { InMemoryServiceEventRepository } from './inMemoryServiceEventRepository'
+import { ServiceEventProvider } from './ServiceEventProvider'
 
 function renderSchedule(
   initialState?: ComponentProps<typeof SchedulePage>['initialState'],
 ) {
+  const repository = new InMemoryServiceEventRepository()
   render(
     <MemoryRouter>
-      <ServiceEventProvider>
+      <ServiceEventProvider repository={repository}>
         <SchedulePage initialState={initialState} />
       </ServiceEventProvider>
     </MemoryRouter>,

@@ -12,7 +12,7 @@ type SchedulePageProps = {
 export function SchedulePage({
   initialState,
 }: SchedulePageProps) {
-  const { events: storedEvents } = useServiceEvents()
+  const storedEvents = useServiceEvents()
   const [stateOverride, setStateOverride] = useState<ScheduleState | undefined>(
     initialState,
   )
