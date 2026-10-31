@@ -62,7 +62,7 @@ describe('ChurchServe application shell', () => {
     const router = renderRoute('/schedule')
 
     await user.click(
-      screen.getByRole('link', { name: 'View Sunday Morning Service' }),
+      await screen.findByRole('link', { name: 'View Sunday Morning Service' }),
     )
 
     expect(
@@ -81,10 +81,12 @@ describe('ChurchServe application shell', () => {
     ).toBeVisible()
   })
 
-  it('shows a record-specific state for an unknown event ID', () => {
+  it('shows a record-specific state for an unknown event ID', async () => {
     renderRoute('/schedule/missing')
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Service not found')
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Service not found',
+    )
     expect(
       screen.getByRole('link', { name: 'Return to the schedule' }),
     ).toHaveAttribute('href', '/schedule')

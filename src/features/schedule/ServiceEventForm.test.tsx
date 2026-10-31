@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ServiceEventForm } from './ServiceEventForm'
@@ -6,7 +6,7 @@ import { ServiceEventForm } from './ServiceEventForm'
 describe('ServiceEventForm', () => {
   it('reveals required errors without submitting an invalid form', async () => {
     const user = userEvent.setup()
-    const onSubmit = vi.fn()
+    const onSubmit = vi.fn().mockResolvedValue(undefined)
     render(<ServiceEventForm onSubmit={onSubmit} />)
 
     await user.click(screen.getByRole('button', { name: 'Add to schedule' }))
@@ -24,7 +24,7 @@ describe('ServiceEventForm', () => {
 
   it('rejects whitespace-only names and locations', async () => {
     const user = userEvent.setup()
-    const onSubmit = vi.fn()
+    const onSubmit = vi.fn().mockResolvedValue(undefined)
     render(<ServiceEventForm onSubmit={onSubmit} />)
 
     await user.type(screen.getByLabelText('Service name'), '   ')
@@ -38,7 +38,7 @@ describe('ServiceEventForm', () => {
 
   it('rejects an end time that is not after the start time', async () => {
     const user = userEvent.setup()
-    const onSubmit = vi.fn()
+    const onSubmit = vi.fn().mockResolvedValue(undefined)
     render(<ServiceEventForm onSubmit={onSubmit} />)
 
     await fillForm(user, {
@@ -54,7 +54,7 @@ describe('ServiceEventForm', () => {
 
   it('trims text and normalizes timestamps before submitting', async () => {
     const user = userEvent.setup()
-    const onSubmit = vi.fn()
+    const onSubmit = vi.fn().mockResolvedValue(undefined)
     render(<ServiceEventForm onSubmit={onSubmit} />)
 
     await fillForm(user)
@@ -67,7 +67,40 @@ describe('ServiceEventForm', () => {
       endsAt: new Date('2026-11-06T20:00').toISOString(),
       location: 'Chapel',
     })
-    expect(screen.getByLabelText('Service name')).toHaveValue('')
+    await waitFor(() =>
+      expect(screen.getByLabelText('Service name')).toHaveValue(''),
+    )
+  })
+
+  it('preserves values and exposes pending feedback during submission', async () => {
+    const user = userEvent.setup()
+    let completeSubmission: () => void = () => undefined
+    const onSubmit = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          completeSubmission = resolve
+        }),
+    )
+    const view = render(<ServiceEventForm onSubmit={onSubmit} />)
+
+    await fillForm(user)
+    await user.click(screen.getByRole('button', { name: 'Add to schedule' }))
+    view.rerender(<ServiceEventForm isSubmitting onSubmit={onSubmit} />)
+
+    expect(
+      screen.getByRole('button', { name: 'Adding to schedule…' }),
+    ).toBeDisabled()
+    expect(screen.getByLabelText('Service name')).toHaveValue(
+      '  Prayer Night  ',
+    )
+
+    completeSubmission()
+    view.rerender(<ServiceEventForm onSubmit={onSubmit} />)
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Add to schedule' }),
+      ).toBeEnabled(),
+    )
   })
 })
 

@@ -1,4 +1,7 @@
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
+import type { ServiceEvent } from './serviceEvent'
+import { isAbortError } from './requestError'
 import { useServiceEventRepository } from './serviceEventContext'
 import './schedule.css'
 
@@ -11,9 +14,85 @@ const detailDateFormatter = new Intl.DateTimeFormat('en-CA', {
 export function ServiceEventDetailPage() {
   const { eventId } = useParams<'eventId'>()
   const repository = useServiceEventRepository()
-  const event = eventId ? repository.findById(eventId) : undefined
+  const [requestVersion, setRequestVersion] = useState(0)
+  const [state, setState] = useState<
+    | { status: 'loading'; eventId: string | undefined }
+    | { status: 'error'; eventId: string }
+    | { status: 'not-found'; eventId: string }
+    | { status: 'ready'; eventId: string; event: ServiceEvent }
+  >({ status: 'loading', eventId })
 
-  if (!event) {
+  useEffect(() => {
+    if (!eventId) {
+      return
+    }
+
+    const controller = new AbortController()
+
+    void repository
+      .findById(eventId, controller.signal)
+      .then((event) => {
+        if (!controller.signal.aborted) {
+          setState(
+            event
+              ? { status: 'ready', eventId, event }
+              : { status: 'not-found', eventId },
+          )
+        }
+      })
+      .catch((error: unknown) => {
+        if (!isAbortError(error)) {
+          setState({ status: 'error', eventId })
+        }
+      })
+
+    return () => controller.abort()
+  }, [eventId, repository, requestVersion])
+
+  const currentState =
+    state.eventId === eventId
+      ? state
+      : { status: 'loading' as const, eventId }
+
+  if (currentState.status === 'loading') {
+    return (
+      <section className="schedule-route-page" aria-labelledby="detail-heading">
+        <Link className="back-link" to="/schedule">
+          ← Back to schedule
+        </Link>
+        <h1 id="detail-heading">Service event</h1>
+        <p className="state-panel" role="status">
+          Loading the service event…
+        </p>
+      </section>
+    )
+  }
+
+  if (currentState.status === 'error') {
+    return (
+      <section className="schedule-route-page" aria-labelledby="detail-heading">
+        <Link className="back-link" to="/schedule">
+          ← Back to schedule
+        </Link>
+        <div className="state-panel error-state" role="alert">
+          <h1 id="detail-heading">We could not load this service</h1>
+          <p>The scheduling service did not respond.</p>
+          <button
+            className="retry-action"
+            type="button"
+            onClick={() => {
+              setState({ status: 'loading', eventId: currentState.eventId })
+              setRequestVersion((version) => version + 1)
+            }}
+          >
+            Try again
+          </button>
+        </div>
+      </section>
+    )
+  }
+
+  if (!eventId || currentState.status === 'not-found') {
     return (
       <section className="schedule-route-page" aria-labelledby="detail-heading">
         <Link className="back-link" to="/schedule">
@@ -28,6 +107,8 @@ export function ServiceEventDetailPage() {
       </section>
     )
   }
+
+  const { event } = currentState
 
   const openPositions = Math.max(
     0,

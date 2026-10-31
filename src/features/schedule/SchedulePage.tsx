@@ -1,29 +1,42 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { ServiceEventCard } from './ServiceEventCard'
 import type { ScheduleState } from './scheduleState'
-import { useServiceEvents } from './serviceEventContext'
+import { isAbortError } from './requestError'
+import { useServiceEventRepository } from './serviceEventContext'
 import './schedule.css'
 
-type SchedulePageProps = {
-  initialState?: ScheduleState
-}
-
-export function SchedulePage({
-  initialState,
-}: SchedulePageProps) {
-  const storedEvents = useServiceEvents()
-  const [stateOverride, setStateOverride] = useState<ScheduleState | undefined>(
-    initialState,
-  )
-  const state: ScheduleState = stateOverride ?? {
-    status: 'ready',
-    events: storedEvents,
-  }
+export function SchedulePage() {
+  const repository = useServiceEventRepository()
+  const [state, setState] = useState<ScheduleState>({ status: 'loading' })
+  const [requestVersion, setRequestVersion] = useState(0)
   const events = state.status === 'ready' ? state.events : []
 
+  useEffect(() => {
+    const controller = new AbortController()
+
+    void repository
+      .list(controller.signal)
+      .then((loadedEvents) => {
+        if (!controller.signal.aborted) {
+          setState({ status: 'ready', events: loadedEvents })
+        }
+      })
+      .catch((error: unknown) => {
+        if (!isAbortError(error)) {
+          setState({
+            status: 'error',
+            message: 'The scheduling service did not respond. Try again.',
+          })
+        }
+      })
+
+    return () => controller.abort()
+  }, [repository, requestVersion])
+
   function reloadSchedule() {
-    setStateOverride(undefined)
+    setState({ status: 'loading' })
+    setRequestVersion((version) => version + 1)
   }
 
   return (

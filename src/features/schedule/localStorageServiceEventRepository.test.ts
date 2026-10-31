@@ -28,38 +28,35 @@ function createStorage(storedValue: string | null = null) {
 }
 
 describe('LocalStorageServiceEventRepository', () => {
-  it('restores a validated versioned snapshot', () => {
+  it('restores a validated versioned snapshot', async () => {
     const storage = createStorage(
       JSON.stringify({ version: 1, events: [storedEvent] }),
     )
     const repository = new LocalStorageServiceEventRepository(() => storage)
 
     expect(storage.getItem).toHaveBeenCalledWith(serviceEventStorageKey)
-    expect(repository.list()).toEqual([storedEvent])
-    expect(repository.findById('stored-event')).toEqual(storedEvent)
+    expect(await repository.list()).toEqual([storedEvent])
+    expect(await repository.findById('stored-event')).toEqual(storedEvent)
     expect(storage.setItem).not.toHaveBeenCalled()
   })
 
-  it('seeds empty storage and persists immutable created snapshots', () => {
+  it('seeds empty storage and persists immutable created snapshots', async () => {
     const storage = createStorage()
-    const listener = vi.fn()
     const repository = new LocalStorageServiceEventRepository(
       () => storage,
       [],
       () => 'created-event',
     )
-    const previousEvents = repository.list()
-    repository.subscribe(listener)
+    const previousEvents = await repository.list()
 
-    repository.create({
+    await repository.create({
       title: 'Prayer Night',
       startsAt: '2026-11-06T19:00:00.000Z',
       endsAt: '2026-11-06T20:00:00.000Z',
       location: 'Chapel',
     })
 
-    expect(repository.list()).not.toBe(previousEvents)
-    expect(listener).toHaveBeenCalledOnce()
+    expect(await repository.list()).not.toBe(previousEvents)
     expect(JSON.parse(storage.read() ?? '')).toEqual({
       version: 1,
       events: [
@@ -83,7 +80,7 @@ describe('LocalStorageServiceEventRepository', () => {
         events: [{ ...storedEvent, assignedPositions: 5 }],
       }),
     ],
-  ])('repairs %s with a validated seed snapshot', (_label, storedValue) => {
+  ])('repairs %s with a validated seed snapshot', async (_label, storedValue) => {
     const storage = createStorage(storedValue)
     const reportError = vi.fn()
     const repository = new LocalStorageServiceEventRepository(
@@ -93,7 +90,7 @@ describe('LocalStorageServiceEventRepository', () => {
       reportError,
     )
 
-    expect(repository.list()).toEqual([storedEvent])
+    expect(await repository.list()).toEqual([storedEvent])
     expect(reportError).toHaveBeenCalledOnce()
     expect(JSON.parse(storage.read() ?? '')).toEqual({
       version: 1,
@@ -101,7 +98,7 @@ describe('LocalStorageServiceEventRepository', () => {
     })
   })
 
-  it('continues in memory when browser storage is unavailable', () => {
+  it('continues in memory when browser storage is unavailable', async () => {
     const reportError = vi.fn()
     const repository = new LocalStorageServiceEventRepository(
       () => {
@@ -112,18 +109,18 @@ describe('LocalStorageServiceEventRepository', () => {
       reportError,
     )
 
-    const created = repository.create({
+    const created = await repository.create({
       title: 'Memory Only Service',
       startsAt: '2026-11-06T19:00:00.000Z',
       endsAt: '2026-11-06T20:00:00.000Z',
       location: 'Chapel',
     })
 
-    expect(repository.findById(created.id)).toEqual(created)
+    expect(await repository.findById(created.id)).toEqual(created)
     expect(reportError).toHaveBeenCalledOnce()
   })
 
-  it('keeps the current session usable when a storage write fails', () => {
+  it('keeps the current session usable when a storage write fails', async () => {
     const reportError = vi.fn()
     const storage = {
       getItem: vi.fn(() => JSON.stringify({ version: 1, events: [] })),
@@ -138,14 +135,14 @@ describe('LocalStorageServiceEventRepository', () => {
       reportError,
     )
 
-    repository.create({
+    await repository.create({
       title: 'Memory Only Service',
       startsAt: '2026-11-06T19:00:00.000Z',
       endsAt: '2026-11-06T20:00:00.000Z',
       location: 'Chapel',
     })
 
-    expect(repository.findById('memory-only-event')).toBeDefined()
+    expect(await repository.findById('memory-only-event')).toBeDefined()
     expect(reportError).toHaveBeenCalledOnce()
   })
 })

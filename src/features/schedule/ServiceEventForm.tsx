@@ -7,7 +7,9 @@ import {
 } from './createServiceEvent'
 
 type ServiceEventFormProps = {
-  onSubmit: (command: CreateServiceEventCommand) => void
+  isSubmitting?: boolean
+  submissionError?: string
+  onSubmit: (command: CreateServiceEventCommand) => Promise<void>
 }
 
 const emptyValues: ServiceEventFormValues = {
@@ -20,7 +22,11 @@ const emptyValues: ServiceEventFormValues = {
 const deviceTimeZone =
   Intl.DateTimeFormat().resolvedOptions().timeZone || 'your device time zone'
 
-export function ServiceEventForm({ onSubmit }: ServiceEventFormProps) {
+export function ServiceEventForm({
+  isSubmitting = false,
+  submissionError,
+  onSubmit,
+}: ServiceEventFormProps) {
   const [values, setValues] = useState<ServiceEventFormValues>(emptyValues)
   const [errors, setErrors] = useState<ServiceEventFormErrors>({})
   const [hasSubmitted, setHasSubmitted] = useState(false)
@@ -35,8 +41,11 @@ export function ServiceEventForm({ onSubmit }: ServiceEventFormProps) {
     }
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (isSubmitting) {
+      return
+    }
     setHasSubmitted(true)
 
     const result = parseServiceEventForm(values)
@@ -45,10 +54,14 @@ export function ServiceEventForm({ onSubmit }: ServiceEventFormProps) {
       return
     }
 
-    onSubmit(result.command)
-    setValues(emptyValues)
-    setErrors({})
-    setHasSubmitted(false)
+    try {
+      await onSubmit(result.command)
+      setValues(emptyValues)
+      setErrors({})
+      setHasSubmitted(false)
+    } catch {
+      // The route owns request feedback and preserves these form values.
+    }
   }
 
   const hasErrors = Object.keys(errors).length > 0
@@ -64,7 +77,17 @@ export function ServiceEventForm({ onSubmit }: ServiceEventFormProps) {
         </p>
       </div>
 
-      <form className="service-event-form" noValidate onSubmit={handleSubmit}>
+      <form
+        className="service-event-form"
+        noValidate
+        aria-busy={isSubmitting}
+        onSubmit={handleSubmit}
+      >
+        {submissionError && (
+          <p className="form-error-summary field-wide" role="alert">
+            {submissionError}
+          </p>
+        )}
         {hasSubmitted && hasErrors && (
           <p className="form-error-summary field-wide" role="alert">
             Review the highlighted fields and try again.
@@ -168,7 +191,9 @@ export function ServiceEventForm({ onSubmit }: ServiceEventFormProps) {
         </div>
 
         <div className="form-actions field-wide">
-          <button type="submit">Add to schedule</button>
+          <button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Adding to schedule…' : 'Add to schedule'}
+          </button>
         </div>
       </form>
     </section>

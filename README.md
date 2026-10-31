@@ -53,6 +53,13 @@ repository contract, validates stored JSON before trusting it, repairs invalid
 snapshots with seeded data, falls back to in-memory behavior when Web Storage
 is unavailable, and verifies the adapter with focused failure-path tests.
 
+## Part 9
+
+The `part_9` branch changes service-event operations to an asynchronous,
+abort-aware repository contract. Schedule and detail routes now model real
+request states, retries replace failed requests, creation exposes pending and
+failure feedback, and route changes cancel obsolete work.
+
 ## Run the application
 
 ```bash

@@ -1,4 +1,4 @@
-import { createContext, useContext, useSyncExternalStore } from 'react'
+import { createContext, useContext } from 'react'
 import type { ServiceEventRepository } from './serviceEventRepository'
 
 export const ServiceEventContext =
@@ -14,13 +14,4 @@ export function useServiceEventRepository() {
   }
 
   return repository
-}
-
-export function useServiceEvents() {
-  const repository = useServiceEventRepository()
-  return useSyncExternalStore(
-    repository.subscribe,
-    repository.list,
-    repository.list,
-  )
 }
