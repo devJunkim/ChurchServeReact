@@ -3,8 +3,6 @@ import { NavLink, Outlet } from 'react-router'
 import { SessionProvider } from './features/auth/SessionProvider'
 import { useSession } from './features/auth/sessionContext'
 import type { SessionClient } from './features/auth/sessionClient'
-import { ServiceEventProvider } from './features/schedule/ServiceEventProvider'
-import type { ServiceEventRepository } from './features/schedule/serviceEventRepository'
 import './styles/app.css'
 
 function navLinkClassName({ isActive }: { isActive: boolean }) {
@@ -12,16 +10,13 @@ function navLinkClassName({ isActive }: { isActive: boolean }) {
 }
 
 type AppProps = {
-  repository: ServiceEventRepository
   sessionClient: SessionClient
 }
 
-export function App({ repository, sessionClient }: AppProps) {
+export function App({ sessionClient }: AppProps) {
   return (
     <SessionProvider client={sessionClient}>
-      <ServiceEventProvider repository={repository}>
-        <AppShell />
-      </ServiceEventProvider>
+      <AppShell />
     </SessionProvider>
   )
 }

@@ -5,7 +5,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { ServiceEventCreatePage } from './ServiceEventCreatePage'
 import { ServiceEventDetailErrorPage } from './ServiceEventDetailErrorPage'
 import { ServiceEventDetailPage } from './ServiceEventDetailPage'
-import { ServiceEventProvider } from './ServiceEventProvider'
+import { ScheduleStoreProvider } from './ScheduleStoreProvider'
+import { ScheduleStore } from './scheduleStore'
 import { createServiceEventDetailLoader } from './serviceEventDetailLoader'
 import type { ServiceEventRepository } from './serviceEventRepository'
 import { seededServiceEvents } from './seededServiceEvents'
@@ -117,19 +118,20 @@ function createRepository(
 }
 
 function renderRoute(path: string, repository: ServiceEventRepository) {
+  const store = new ScheduleStore(repository)
   const router = createMemoryRouter(
     [
       {
         path: '/',
         element: (
-          <ServiceEventProvider repository={repository}>
+          <ScheduleStoreProvider store={store}>
             <Outlet />
-          </ServiceEventProvider>
+          </ScheduleStoreProvider>
         ),
         children: [
           {
             path: 'schedule/:eventId',
-            loader: createServiceEventDetailLoader(repository),
+            loader: createServiceEventDetailLoader(store),
             Component: ServiceEventDetailPage,
             ErrorBoundary: ServiceEventDetailErrorPage,
           },

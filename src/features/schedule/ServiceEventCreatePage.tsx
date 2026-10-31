@@ -8,12 +8,12 @@ import {
 import { ServiceEventForm } from './ServiceEventForm'
 import type { CreateServiceEventCommand } from './createServiceEvent'
 import { isAbortError } from './requestError'
-import { useServiceEventRepository } from './serviceEventContext'
+import { useScheduleStore } from './scheduleStoreContext'
 import './schedule.css'
 
 export function ServiceEventCreatePage() {
   const navigate = useNavigate()
-  const repository = useServiceEventRepository()
+  const store = useScheduleStore()
   const activeRequest = useRef<AbortController | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submissionError, setSubmissionError] = useState<string>()
@@ -57,7 +57,7 @@ export function ServiceEventCreatePage() {
     setSubmissionError(undefined)
 
     try {
-      const event = await repository.create(command, controller.signal)
+      const event = await store.create(command, controller.signal)
       controller.signal.throwIfAborted()
       hasSaved.current = true
       setIsDirty(false)

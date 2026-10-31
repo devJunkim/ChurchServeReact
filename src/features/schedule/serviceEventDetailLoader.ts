@@ -1,9 +1,9 @@
 import type { LoaderFunction } from 'react-router'
 import { isAbortError } from './requestError'
-import type { ServiceEventRepository } from './serviceEventRepository'
+import type { ScheduleStore } from './scheduleStore'
 
 export function createServiceEventDetailLoader(
-  repository: ServiceEventRepository,
+  store: Pick<ScheduleStore, 'findById'>,
 ): LoaderFunction {
   return async ({ params, request }) => {
     const eventId = params.eventId
@@ -17,7 +17,7 @@ export function createServiceEventDetailLoader(
 
     let event
     try {
-      event = await repository.findById(eventId, request.signal)
+      event = await store.findById(eventId, request.signal)
     } catch (error) {
       if (request.signal.aborted || isAbortError(error)) {
         throw error
