@@ -102,7 +102,10 @@ describe('ChurchServe application shell', () => {
     )
 
     expect(
-      await screen.findByRole('heading', { name: 'Sunday Morning Service' }),
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'Sunday Morning Service',
+      }),
     ).toBeVisible()
     expect(router.state.location.pathname).toBe(
       '/schedule/sunday-2026-11-01',
@@ -162,7 +165,7 @@ describe('ChurchServe application shell', () => {
     await user.click(screen.getByRole('button', { name: 'Add to schedule' }))
 
     expect(
-      await screen.findByRole('heading', { name: 'Prayer Night' }),
+      await screen.findByRole('heading', { level: 1, name: 'Prayer Night' }),
     ).toBeVisible()
     expect(screen.getByText('Chapel')).toBeVisible()
     expect(router.state.location.pathname).toBe(
@@ -215,7 +218,10 @@ describe('ChurchServe application shell', () => {
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
 
     expect(
-      await screen.findByRole('heading', { name: 'Sunday Morning Service' }),
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'Sunday Morning Service',
+      }),
     ).toBeVisible()
     expect(router.state.location.pathname).toBe(
       '/schedule/sunday-2026-11-01',

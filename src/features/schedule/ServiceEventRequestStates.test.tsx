@@ -32,7 +32,10 @@ describe('service event request states', () => {
     await user.click(screen.getByRole('button', { name: 'Try again' }))
 
     expect(
-      await screen.findByRole('heading', { name: 'Sunday Morning Service' }),
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'Sunday Morning Service',
+      }),
     ).toBeVisible()
     expect(findById).toHaveBeenCalledTimes(2)
   })

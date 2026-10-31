@@ -44,7 +44,10 @@ describe('routed schedule workflow', () => {
     )
 
     expect(
-      await screen.findByRole('heading', { name: 'Sunday Morning Service' }),
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'Sunday Morning Service',
+      }),
     ).toBeVisible()
     expect(repository.findByIdCalls).toEqual([])
 
@@ -64,7 +67,7 @@ describe('routed schedule workflow', () => {
     await user.click(screen.getByRole('button', { name: 'Add to schedule' }))
 
     expect(
-      await screen.findByRole('heading', { name: 'Prayer Night' }),
+      await screen.findByRole('heading', { level: 1, name: 'Prayer Night' }),
     ).toBeVisible()
     expect(screen.getByText('Chapel')).toBeVisible()
     expect(repository.createCalls).toEqual([
