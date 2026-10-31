@@ -1,11 +1,14 @@
 import type { CreateServiceEventCommand } from './createServiceEvent'
 import type { ServiceEvent } from './serviceEvent'
 
-export type ServiceEventListener = () => void
-
 export interface ServiceEventRepository {
-  list: () => readonly ServiceEvent[]
-  findById: (eventId: string) => ServiceEvent | undefined
-  create: (command: CreateServiceEventCommand) => ServiceEvent
-  subscribe: (listener: ServiceEventListener) => () => void
+  list: (signal?: AbortSignal) => Promise<readonly ServiceEvent[]>
+  findById: (
+    eventId: string,
+    signal?: AbortSignal,
+  ) => Promise<ServiceEvent | undefined>
+  create: (
+    command: CreateServiceEventCommand,
+    signal?: AbortSignal,
+  ) => Promise<ServiceEvent>
 }

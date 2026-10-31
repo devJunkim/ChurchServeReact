@@ -1,35 +1,33 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { InMemoryServiceEventRepository } from './inMemoryServiceEventRepository'
 
 describe('InMemoryServiceEventRepository', () => {
-  it('finds a seeded event and represents a missing record', () => {
+  it('finds a seeded event and represents a missing record', async () => {
     const repository = new InMemoryServiceEventRepository()
 
-    expect(repository.findById('sunday-2026-11-01')?.title).toBe(
+    expect((await repository.findById('sunday-2026-11-01'))?.title).toBe(
       'Sunday Morning Service',
     )
-    expect(repository.findById('missing')).toBeUndefined()
+    expect(await repository.findById('missing')).toBeUndefined()
   })
 
-  it('creates an event with an immutable snapshot and notifies subscribers', () => {
+  it('creates an event with an immutable snapshot', async () => {
     let nextId = 0
     const repository = new InMemoryServiceEventRepository(
       [],
       () => `event-${++nextId}`,
     )
-    const previousEvents = repository.list()
-    const listener = vi.fn()
-    const unsubscribe = repository.subscribe(listener)
+    const previousEvents = await repository.list()
 
-    const created = repository.create({
+    const created = await repository.create({
       title: 'Prayer Night',
       startsAt: '2026-11-06T19:00:00.000Z',
       endsAt: '2026-11-06T20:00:00.000Z',
       location: 'Chapel',
     })
 
-    expect(repository.list()).not.toBe(previousEvents)
-    expect(repository.findById(created.id)).toEqual(created)
+    expect(await repository.list()).not.toBe(previousEvents)
+    expect(await repository.findById(created.id)).toEqual(created)
     expect(created).toEqual(
       expect.objectContaining({
         id: 'event-1',
@@ -37,15 +35,15 @@ describe('InMemoryServiceEventRepository', () => {
         assignedPositions: 0,
       }),
     )
-    expect(listener).toHaveBeenCalledOnce()
+  })
 
-    unsubscribe()
-    repository.create({
-      title: 'Second Event',
-      startsAt: '2026-11-07T19:00:00.000Z',
-      endsAt: '2026-11-07T20:00:00.000Z',
-      location: 'Chapel',
+  it('rejects work when the request is already aborted', async () => {
+    const repository = new InMemoryServiceEventRepository()
+    const controller = new AbortController()
+    controller.abort()
+
+    await expect(repository.list(controller.signal)).rejects.toMatchObject({
+      name: 'AbortError',
     })
-    expect(listener).toHaveBeenCalledOnce()
   })
 })

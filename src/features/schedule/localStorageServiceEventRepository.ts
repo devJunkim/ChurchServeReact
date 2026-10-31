@@ -1,9 +1,6 @@
 import type { CreateServiceEventCommand } from './createServiceEvent'
 import type { ServiceEvent } from './serviceEvent'
-import type {
-  ServiceEventListener,
-  ServiceEventRepository,
-} from './serviceEventRepository'
+import type { ServiceEventRepository } from './serviceEventRepository'
 import { seededServiceEvents } from './seededServiceEvents'
 
 type StoragePort = Pick<Storage, 'getItem' | 'setItem'>
@@ -72,7 +69,6 @@ export class LocalStorageServiceEventRepository
   implements ServiceEventRepository
 {
   private events: readonly ServiceEvent[]
-  private readonly listeners = new Set<ServiceEventListener>()
   private readonly eventIdFactory: () => string
   private readonly onPersistenceError: (error: unknown) => void
   private storage: StoragePort | undefined
@@ -89,12 +85,21 @@ export class LocalStorageServiceEventRepository
     this.restore(storageFactory)
   }
 
-  readonly list = () => this.events
+  readonly list = async (signal?: AbortSignal) => {
+    signal?.throwIfAborted()
+    return this.events
+  }
 
-  readonly findById = (eventId: string) =>
-    this.events.find((event) => event.id === eventId)
+  readonly findById = async (eventId: string, signal?: AbortSignal) => {
+    signal?.throwIfAborted()
+    return this.events.find((event) => event.id === eventId)
+  }
 
-  readonly create = (command: CreateServiceEventCommand) => {
+  readonly create = async (
+    command: CreateServiceEventCommand,
+    signal?: AbortSignal,
+  ) => {
+    signal?.throwIfAborted()
     const event: ServiceEvent = {
       id: this.eventIdFactory(),
       ...command,
@@ -105,13 +110,7 @@ export class LocalStorageServiceEventRepository
 
     this.persist(nextEvents)
     this.events = nextEvents
-    this.listeners.forEach((listener) => listener())
     return event
-  }
-
-  readonly subscribe = (listener: ServiceEventListener) => {
-    this.listeners.add(listener)
-    return () => this.listeners.delete(listener)
   }
 
   private restore(storageFactory: () => StoragePort) {
