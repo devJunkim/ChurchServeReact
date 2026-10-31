@@ -68,6 +68,13 @@ boundary, and introduces a minimal ASP.NET Core API with thread-safe in-memory
 storage, server-side validation, REST status codes, and Vite development
 proxying.
 
+## Part 11
+
+The `part_11` branch replaces process-memory API storage with SQLite and Entity
+Framework Core. A repository-local EF tool manifest creates a reviewed initial
+migration, startup applies pending migrations and seeds only an empty database,
+and asynchronous endpoints query and save through a scoped DbContext.
+
 ## Run the application
 
 ```bash
@@ -90,6 +97,9 @@ npm run lint
 npm run typecheck
 npm test
 npm run build
+dotnet tool restore
+dotnet build server/ChurchServe.Api/ChurchServe.Api.csproj --configuration Release
+dotnet ef migrations has-pending-model-changes --project server/ChurchServe.Api
 ```
 
 ## Tooling notes
