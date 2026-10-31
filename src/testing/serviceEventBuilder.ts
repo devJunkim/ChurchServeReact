@@ -11,6 +11,7 @@ export function buildServiceEvent(
     location: 'Main Sanctuary',
     requiredPositions: 10,
     assignedPositions: 7,
+    version: 1,
     ...overrides,
   }
 }

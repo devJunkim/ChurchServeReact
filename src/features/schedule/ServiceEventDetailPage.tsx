@@ -1,5 +1,6 @@
 import { Link, useLoaderData } from 'react-router'
 import type { ServiceEvent } from './serviceEvent'
+import { AssignmentBoardPanel } from './AssignmentBoardPanel'
 import './schedule.css'
 
 const detailDateFormatter = new Intl.DateTimeFormat('en-CA', {
@@ -50,6 +51,8 @@ export function ServiceEventDetailPage() {
           <dd>{staffingLabel(event.requiredPositions, openPositions)}</dd>
         </div>
       </dl>
+
+      <AssignmentBoardPanel event={event} />
     </section>
   )
 }

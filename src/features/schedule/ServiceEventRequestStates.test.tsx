@@ -8,6 +8,9 @@ import { RouteLoadingPage } from '../../shared/ui/RouteLoadingPage'
 import { ServiceEventDetailPage } from './ServiceEventDetailPage'
 import { ScheduleStoreProvider } from './ScheduleStoreProvider'
 import { ScheduleStore } from './scheduleStore'
+import { AssignmentStoreProvider } from './AssignmentStoreProvider'
+import { AssignmentStore } from './assignmentStore'
+import { FakeAssignmentRepository } from '../../testing/FakeAssignmentRepository'
 import { createServiceEventDetailLoader } from './serviceEventDetailLoader'
 import type { ServiceEventRepository } from './serviceEventRepository'
 import { seededServiceEvents } from './seededServiceEvents'
@@ -123,13 +126,16 @@ function createRepository(
 
 function renderRoute(path: string, repository: ServiceEventRepository) {
   const store = new ScheduleStore(repository)
+  const assignmentStore = new AssignmentStore(new FakeAssignmentRepository())
   const router = createMemoryRouter(
     [
       {
         path: '/',
         element: (
           <ScheduleStoreProvider store={store}>
-            <Outlet />
+            <AssignmentStoreProvider store={assignmentStore}>
+              <Outlet />
+            </AssignmentStoreProvider>
           </ScheduleStoreProvider>
         ),
         children: [

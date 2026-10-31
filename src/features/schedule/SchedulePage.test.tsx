@@ -34,7 +34,7 @@ describe('SchedulePage', () => {
     ).toHaveTextContent('2 upcoming services')
     expect(
       screen.getByRole('region', { name: 'Current schedule summary' }),
-    ).toHaveTextContent('3 open positions')
+    ).toHaveTextContent('5 open positions')
   })
 
   it('shows a loading message without rendering an empty state', () => {

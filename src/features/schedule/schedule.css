@@ -474,3 +474,174 @@
     border-right: 0;
   }
 }
+
+.assignment-board {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid #d9e2ec;
+}
+
+.assignment-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.assignment-heading h2 {
+  margin: 0;
+  color: #102a43;
+  font-size: clamp(1.55rem, 4vw, 2.1rem);
+}
+
+.assignment-version,
+.assignment-summary {
+  color: #627d98;
+}
+
+.assignment-version {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 750;
+}
+
+.assignment-summary {
+  margin: 1rem 0 0;
+}
+
+.assignment-notice {
+  margin: 1rem 0 0;
+  padding: 0.8rem 1rem;
+  border-left: 4px solid #087f5b;
+  background: #e6fcf5;
+  color: #245448;
+}
+
+.assignment-notice.error,
+.assignment-notice.conflict {
+  border-color: #c92a2a;
+  background: #fff5f5;
+  color: #862e2e;
+}
+
+.position-list {
+  display: grid;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  gap: 0.8rem;
+  list-style: none;
+}
+
+.position-list > li {
+  display: grid;
+  align-items: center;
+  padding: 1.1rem;
+  border: 1px solid #d9e2ec;
+  border-radius: 0.9rem;
+  background: #fff;
+  gap: 1rem;
+  grid-template-columns: minmax(12rem, 1fr) minmax(15rem, 1fr);
+}
+
+.position-copy span {
+  color: #087f5b;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.position-copy h3,
+.position-copy p {
+  margin: 0;
+}
+
+.position-copy h3 {
+  margin-top: 0.25rem;
+  color: #102a43;
+}
+
+.position-copy p {
+  margin-top: 0.35rem;
+  color: #627d98;
+}
+
+.assigned-volunteer,
+.assignment-action {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.assigned-volunteer {
+  justify-items: end;
+}
+
+.assigned-volunteer span {
+  color: #3d7a66;
+  font-size: 0.85rem;
+  font-weight: 750;
+}
+
+.assigned-volunteer .saving {
+  color: #8f5b00;
+}
+
+.assignment-action {
+  grid-template-columns: 1fr auto;
+}
+
+.assignment-action label {
+  grid-column: 1 / -1;
+  color: #334e68;
+  font-size: 0.85rem;
+  font-weight: 750;
+}
+
+.assignment-action select,
+.assignment-action button {
+  min-height: 2.75rem;
+  border-radius: 0.55rem;
+  font: inherit;
+}
+
+.assignment-action select {
+  min-width: 0;
+  padding: 0.55rem;
+  border: 1px solid #9fb3c8;
+  background: #fff;
+}
+
+.assignment-action button {
+  padding: 0.55rem 0.9rem;
+  border: 0;
+  background: #087f5b;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.assignment-action button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.assignment-action select:focus-visible,
+.assignment-action button:focus-visible {
+  outline: 3px solid #74c0fc;
+  outline-offset: 2px;
+}
+
+@media (max-width: 42rem) {
+  .assignment-heading {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .position-list > li {
+    grid-template-columns: 1fr;
+  }
+
+  .assigned-volunteer {
+    justify-items: start;
+  }
+}

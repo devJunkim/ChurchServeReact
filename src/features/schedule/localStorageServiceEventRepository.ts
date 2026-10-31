@@ -75,6 +75,7 @@ export class LocalStorageServiceEventRepository
       ...command,
       requiredPositions: 0,
       assignedPositions: 0,
+      version: 1,
     }
     const nextEvents = [...this.events, event]
 

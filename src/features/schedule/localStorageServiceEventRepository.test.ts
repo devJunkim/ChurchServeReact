@@ -13,6 +13,7 @@ const storedEvent: ServiceEvent = {
   location: 'Main Sanctuary',
   requiredPositions: 4,
   assignedPositions: 2,
+  version: 1,
 }
 
 function createStorage(storedValue: string | null = null) {

@@ -134,6 +134,29 @@ export class ScheduleStore {
     return event
   }
 
+  updateStaffing(
+    eventId: string,
+    assignedPositions: number,
+    version: number,
+  ) {
+    const current = this.eventCache.get(eventId)
+    if (!current || version < current.version) return
+
+    const updated = { ...current, assignedPositions, version }
+    this.eventCache.set(eventId, updated)
+
+    if (this.snapshot.status === 'ready') {
+      const events = this.snapshot.events.map((event) =>
+        event.id === eventId ? updated : event,
+      )
+      this.setSnapshot({
+        status: 'ready',
+        events,
+        totalOpenPositions: countOpenPositions(events),
+      })
+    }
+  }
+
   dispose() {
     this.activeListRequest?.controller.abort()
     this.activeListRequest = undefined

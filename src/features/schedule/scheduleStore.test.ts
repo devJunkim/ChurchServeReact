@@ -14,7 +14,7 @@ describe('ScheduleStore', () => {
     expect(store.getSnapshot()).toEqual({
       status: 'ready',
       events: seededServiceEvents,
-      totalOpenPositions: 3,
+      totalOpenPositions: 5,
     })
   })
 

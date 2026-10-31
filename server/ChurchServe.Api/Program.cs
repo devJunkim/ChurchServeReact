@@ -1,3 +1,4 @@
+using ChurchServe.Api.Assignments;
 using ChurchServe.Api.Authentication;
 using ChurchServe.Api.Data;
 using ChurchServe.Api.ServiceEvents;
@@ -71,6 +72,8 @@ app.MapSessionEndpoints();
 var serviceEvents = app.MapGroup("/api/service-events")
     .RequireAuthorization();
 
+serviceEvents.MapAssignmentEndpoints();
+
 serviceEvents.MapGet("", async (
     ChurchServeDbContext dbContext,
     CancellationToken cancellationToken) =>
@@ -141,6 +144,7 @@ static ServiceEvent ToResponse(ServiceEventEntity serviceEvent) =>
         serviceEvent.EndsAt,
         serviceEvent.Location,
         serviceEvent.RequiredPositions,
-        serviceEvent.AssignedPositions);
+        serviceEvent.AssignedPositions,
+        serviceEvent.Version);
 
 public partial class Program;

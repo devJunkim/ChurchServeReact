@@ -39,6 +39,7 @@ export class InMemoryServiceEventRepository
       ...command,
       requiredPositions: 0,
       assignedPositions: 0,
+      version: 1,
     }
 
     this.events = [...this.events, event]

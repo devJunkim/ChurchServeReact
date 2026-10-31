@@ -9,6 +9,7 @@ export const seededServiceEvents: readonly ServiceEvent[] = [
     location: 'Main Sanctuary',
     requiredPositions: 10,
     assignedPositions: 7,
+    version: 1,
   },
   {
     id: 'rehearsal-2026-11-05',
@@ -17,6 +18,7 @@ export const seededServiceEvents: readonly ServiceEvent[] = [
     endsAt: '2026-11-05T20:30:00-05:00',
     location: 'Music Room',
     requiredPositions: 6,
-    assignedPositions: 6,
+    assignedPositions: 4,
+    version: 1,
   },
 ]

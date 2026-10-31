@@ -6,4 +6,5 @@ export type ServiceEvent = {
   readonly location: string
   readonly requiredPositions: number
   readonly assignedPositions: number
+  readonly version: number
 }

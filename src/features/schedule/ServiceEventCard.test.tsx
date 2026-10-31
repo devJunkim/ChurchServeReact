@@ -12,6 +12,7 @@ const event: ServiceEvent = {
   location: 'Main Sanctuary',
   requiredPositions: 10,
   assignedPositions: 7,
+  version: 1,
 }
 
 function renderCard(eventValue = event) {
