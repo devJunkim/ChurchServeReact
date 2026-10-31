@@ -28,6 +28,12 @@ The `part_4` branch adds readonly volunteer-assignment records, pure validation
 and reducer logic, immutable state transitions, derived open positions, and a
 custom `useAssignmentState` hook with focused domain and hook tests.
 
+## Part 5
+
+The `part_5` branch adds a typed controlled service-event form, pure field and
+time-range validation, accessible error feedback, normalized creation commands,
+immutable schedule updates, and child-to-parent integration tests.
+
 ## Run the application
 
 ```bash

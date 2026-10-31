@@ -59,4 +59,23 @@ describe('SchedulePage', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
+
+  it('adds a valid service event to the in-memory schedule', async () => {
+    const user = userEvent.setup()
+    render(<SchedulePage eventIdFactory={() => 'prayer-night'} />)
+
+    await user.type(screen.getByLabelText('Service name'), '  Prayer Night  ')
+    await user.type(screen.getByLabelText('Starts'), '2026-11-06T19:00')
+    await user.type(screen.getByLabelText('Ends'), '2026-11-06T20:00')
+    await user.type(screen.getByLabelText('Location'), '  Chapel  ')
+    await user.click(screen.getByRole('button', { name: 'Add to schedule' }))
+
+    expect(screen.getAllByRole('article')).toHaveLength(3)
+    expect(
+      screen.getByRole('heading', { name: 'Prayer Night' }),
+    ).toBeVisible()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Prayer Night was added to the schedule.',
+    )
+  })
 })
