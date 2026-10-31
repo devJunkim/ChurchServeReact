@@ -1,8 +1,8 @@
+import { Link } from 'react-router'
 import type { ServiceEvent } from './serviceEvent'
 
 type ServiceEventCardProps = {
   event: ServiceEvent
-  onSelect: (eventId: string) => void
 }
 
 const serviceDateFormatter = new Intl.DateTimeFormat('en-CA', {
@@ -11,7 +11,7 @@ const serviceDateFormatter = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'America/Toronto',
 })
 
-export function ServiceEventCard({ event, onSelect }: ServiceEventCardProps) {
+export function ServiceEventCard({ event }: ServiceEventCardProps) {
   const openPositions = Math.max(
     0,
     event.requiredPositions - event.assignedPositions,
@@ -39,14 +39,13 @@ export function ServiceEventCard({ event, onSelect }: ServiceEventCardProps) {
         </p>
       )}
 
-      <button
-        type="button"
+      <Link
         className="event-action"
-        onClick={() => onSelect(event.id)}
+        to={`/schedule/${event.id}`}
         aria-label={`View ${event.title}`}
       >
         View schedule
-      </button>
+      </Link>
     </article>
   )
 }
