@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
-import { ServiceEventProvider } from './features/schedule/serviceEventStore'
+import { InMemoryServiceEventRepository } from './features/schedule/inMemoryServiceEventRepository'
+import { ServiceEventProvider } from './features/schedule/ServiceEventProvider'
 import './styles/app.css'
 
 function navLinkClassName({ isActive }: { isActive: boolean }) {
@@ -7,8 +9,12 @@ function navLinkClassName({ isActive }: { isActive: boolean }) {
 }
 
 export function App() {
+  const [eventRepository] = useState(
+    () => new InMemoryServiceEventRepository(),
+  )
+
   return (
-    <ServiceEventProvider>
+    <ServiceEventProvider repository={eventRepository}>
       <div className="application-shell">
         <a className="skip-link" href="#main-content">
           Skip to main content

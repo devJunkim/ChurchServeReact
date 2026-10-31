@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router'
-import { useServiceEvents } from './serviceEventContext'
+import { useServiceEventRepository } from './serviceEventContext'
 import './schedule.css'
 
 const detailDateFormatter = new Intl.DateTimeFormat('en-CA', {
@@ -10,8 +10,8 @@ const detailDateFormatter = new Intl.DateTimeFormat('en-CA', {
 
 export function ServiceEventDetailPage() {
   const { eventId } = useParams<'eventId'>()
-  const { findById } = useServiceEvents()
-  const event = eventId ? findById(eventId) : undefined
+  const repository = useServiceEventRepository()
+  const event = eventId ? repository.findById(eventId) : undefined
 
   if (!event) {
     return (

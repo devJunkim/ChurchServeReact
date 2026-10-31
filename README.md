@@ -40,6 +40,12 @@ The `part_6` branch adds shared in-memory event state, dedicated creation and
 parameterized detail routes, semantic card links, record-specific missing
 content, programmatic post-submit navigation, and route-level tests.
 
+## Part 7
+
+The `part_7` branch puts service-event operations behind a repository contract,
+selects an in-memory implementation at the application boundary, bridges its
+immutable snapshots into React, and tests the concrete repository in isolation.
+
 ## Run the application
 
 ```bash

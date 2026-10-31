@@ -1,15 +1,15 @@
 import { Link, useNavigate } from 'react-router'
 import { ServiceEventForm } from './ServiceEventForm'
 import type { CreateServiceEventCommand } from './createServiceEvent'
-import { useServiceEvents } from './serviceEventContext'
+import { useServiceEventRepository } from './serviceEventContext'
 import './schedule.css'
 
 export function ServiceEventCreatePage() {
   const navigate = useNavigate()
-  const { create } = useServiceEvents()
+  const repository = useServiceEventRepository()
 
   function createServiceEvent(command: CreateServiceEventCommand) {
-    const event = create(command)
+    const event = repository.create(command)
     void navigate(`/schedule/${event.id}`)
   }
 

@@ -1,22 +1,26 @@
-import { createContext, useContext } from 'react'
-import type { CreateServiceEventCommand } from './createServiceEvent'
-import type { ServiceEvent } from './serviceEvent'
-
-export type ServiceEventStoreValue = {
-  readonly events: readonly ServiceEvent[]
-  findById: (eventId: string) => ServiceEvent | undefined
-  create: (command: CreateServiceEventCommand) => ServiceEvent
-}
+import { createContext, useContext, useSyncExternalStore } from 'react'
+import type { ServiceEventRepository } from './serviceEventRepository'
 
 export const ServiceEventContext =
-  createContext<ServiceEventStoreValue | null>(null)
+  createContext<ServiceEventRepository | null>(null)
 
-export function useServiceEvents() {
-  const store = useContext(ServiceEventContext)
+export function useServiceEventRepository() {
+  const repository = useContext(ServiceEventContext)
 
-  if (!store) {
-    throw new Error('useServiceEvents must be used inside ServiceEventProvider.')
+  if (!repository) {
+    throw new Error(
+      'Service event hooks must be used inside ServiceEventProvider.',
+    )
   }
 
-  return store
+  return repository
+}
+
+export function useServiceEvents() {
+  const repository = useServiceEventRepository()
+  return useSyncExternalStore(
+    repository.subscribe,
+    repository.list,
+    repository.list,
+  )
 }
