@@ -75,6 +75,13 @@ Framework Core. A repository-local EF tool manifest creates a reviewed initial
 migration, startup applies pending migrations and seeds only an empty database,
 and asynchronous endpoints query and save through a scoped DbContext.
 
+## Part 12
+
+The `part_12` branch adds ASP.NET Core integration tests around the real Minimal
+API. Each test host applies the production EF Core migration to an isolated
+temporary SQLite database and verifies seeded reads, missing records, validation
+failures, creation semantics, and persistence after a host restart.
+
 ## Run the application
 
 ```bash
@@ -99,6 +106,7 @@ npm test
 npm run build
 dotnet tool restore
 dotnet build server/ChurchServe.Api/ChurchServe.Api.csproj --configuration Release
+dotnet test server/ChurchServe.Api.Tests/ChurchServe.Api.Tests.csproj --configuration Release
 dotnet ef migrations has-pending-model-changes --project server/ChurchServe.Api
 ```
 
