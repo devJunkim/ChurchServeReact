@@ -31,17 +31,32 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run frontend verification
-        run: npm run verify
+      - name: Check architecture boundaries
+        run: npm run check:architecture
+
+      - name: Lint frontend
+        run: npm run lint
+
+      - name: Type-check frontend
+        run: npm run typecheck
+
+      - name: Run frontend tests
+        run: npm run test:ci
 
       - name: Restore .NET tools
         run: dotnet tool restore
+
+      - name: Build production release artifact
+        run: npm run build:release
 
       - name: Run API integration tests
         run: dotnet test server/ChurchServe.Api.Tests/ChurchServe.Api.Tests.csproj --configuration Release
 
       - name: Check EF Core model drift
         run: dotnet ef migrations has-pending-model-changes --project server/ChurchServe.Api
+
+      - name: Verify published release artifact
+        run: npm run test:release
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
@@ -58,4 +73,12 @@ jobs:
             playwright-report/
             test-results/
           if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload production release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: churchserve-react-${{ github.sha }}
+          path: artifacts/publish/
+          if-no-files-found: error
           retention-days: 7

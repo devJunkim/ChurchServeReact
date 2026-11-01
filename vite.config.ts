@@ -7,6 +7,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': process.env.CHURCHSERVE_API_URL ?? 'http://localhost:5100',
+      '/health': process.env.CHURCHSERVE_API_URL ?? 'http://localhost:5100',
+      '/runtime-config.json':
+        process.env.CHURCHSERVE_API_URL ?? 'http://localhost:5100',
     },
   },
 })

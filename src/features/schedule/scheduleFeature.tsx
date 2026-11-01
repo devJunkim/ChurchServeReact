@@ -17,6 +17,7 @@ import { createServiceEventDetailLoader } from './serviceEventDetailLoader'
 import type { ServiceEventRepository } from './serviceEventRepository'
 import { ScheduleStore } from './scheduleStore'
 import { AuthorizationCacheBoundary } from './AuthorizationCacheBoundary'
+import { appendApiPath } from '../../core/config/runtimeConfig'
 
 export function createScheduleFeature(
   repository: ServiceEventRepository = new HttpServiceEventRepository(),
@@ -51,6 +52,14 @@ export function createScheduleFeature(
       ErrorBoundary: ServiceEventDetailErrorPage,
     },
   }
+}
+
+export function createScheduleFeatureForApi(apiBaseUrl: string) {
+  const serviceEventsUrl = appendApiPath(apiBaseUrl, '/service-events')
+  return createScheduleFeature(
+    new HttpServiceEventRepository(serviceEventsUrl),
+    new HttpAssignmentRepository(serviceEventsUrl),
+  )
 }
 
 

@@ -90,6 +90,13 @@ integration tests, explicit React session states, and accessible sign-in and
 sign-out experiences. The tutorial is split into server and React articles so
 each security boundary can be reviewed independently.
 
+## Part 25
+
+The `part_25` branch loads validated public runtime configuration before React
+starts, packages the optimized Vite output with ASP.NET Core, serves safe SPA
+fallback and deployment headers, separates liveness from database readiness,
+and verifies the exact release artifact before CI retains it.
+
 ## Run the application
 
 ```bash
@@ -128,6 +135,17 @@ npm run test:e2e
 
 The browser suite starts its own React and API processes, uses a testing-only
 SQLite database, and does not require the development account in user-secrets.
+
+Build and smoke-test the production-shaped combined artifact with:
+
+```bash
+npm run build:release
+npm run test:release
+```
+
+The published application is written to `artifacts/publish`. Its public runtime
+settings can be overridden at deployment with `PublicRuntime__ApiBaseUrl` and
+`PublicRuntime__Release`; browser configuration must never contain secrets.
 
 ## Tooling notes
 

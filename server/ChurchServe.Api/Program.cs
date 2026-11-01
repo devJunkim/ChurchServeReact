@@ -1,6 +1,7 @@
 using ChurchServe.Api.Assignments;
 using ChurchServe.Api.Authentication;
 using ChurchServe.Api.Data;
+using ChurchServe.Api.Deployment;
 using ChurchServe.Api.ServiceEvents;
 using ChurchServe.Api.Testing;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -63,9 +64,23 @@ builder.Services.AddAntiforgery(options =>
             ? CookieSecurePolicy.SameAsRequest
             : CookieSecurePolicy.Always;
 });
+builder.Services
+    .AddOptions<PublicRuntimeOptions>()
+    .Bind(builder.Configuration.GetSection(PublicRuntimeOptions.SectionName))
+    .Validate(
+        PublicRuntimeOptions.HasValidApiBaseUrl,
+        "PublicRuntime:ApiBaseUrl must be a same-origin absolute path.")
+    .Validate(
+        PublicRuntimeOptions.HasValidRelease,
+        "PublicRuntime:Release must be between 1 and 100 characters.")
+    .ValidateOnStart();
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
 
 var app = builder.Build();
 await DatabaseInitializer.InitializeAsync(app.Services);
+app.UseDeploymentHeaders();
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapSessionEndpoints();
@@ -140,6 +155,13 @@ serviceEvents.MapPost("", async (
 })
 .ValidateAntiforgery()
 .RequireAuthorization(ChurchServePermissions.ScheduleManage);
+
+app.MapDeploymentEndpoints();
+app.MapMethods(
+    "/api/{**path}",
+    ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+    () => Results.NotFound());
+app.MapFallbackToFile("index.html");
 
 app.Run();
 
