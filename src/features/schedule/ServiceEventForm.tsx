@@ -9,6 +9,8 @@ import {
 type ServiceEventFormProps = {
   isSubmitting?: boolean
   submissionError?: string
+  serverErrors?: ServiceEventFormErrors
+  onServerErrorsClear?: () => void
   onDirtyChange?: (isDirty: boolean) => void
   onSubmit: (command: CreateServiceEventCommand) => Promise<void>
 }
@@ -26,16 +28,22 @@ const deviceTimeZone =
 export function ServiceEventForm({
   isSubmitting = false,
   submissionError,
+  serverErrors,
+  onServerErrorsClear,
   onDirtyChange,
   onSubmit,
 }: ServiceEventFormProps) {
   const [values, setValues] = useState<ServiceEventFormValues>(emptyValues)
   const [errors, setErrors] = useState<ServiceEventFormErrors>({})
   const [hasSubmitted, setHasSubmitted] = useState(false)
+  const displayedErrors = { ...errors, ...serverErrors }
+  const showErrorSummary =
+    hasSubmitted || Object.keys(serverErrors ?? {}).length > 0
 
   function updateField(field: keyof ServiceEventFormValues, value: string) {
     const nextValues = { ...values, [field]: value }
     setValues(nextValues)
+    onServerErrorsClear?.()
     onDirtyChange?.(
       Object.values(nextValues).some((fieldValue) => fieldValue.length > 0),
     )
@@ -70,8 +78,8 @@ export function ServiceEventForm({
     }
   }
 
-  const hasErrors = Object.keys(errors).length > 0
-  const timeRangeError = errors.timeRange
+  const hasErrors = Object.keys(displayedErrors).length > 0
+  const timeRangeError = displayedErrors.timeRange
 
   return (
     <section className="event-form-panel" aria-labelledby="event-form-heading">
@@ -94,7 +102,7 @@ export function ServiceEventForm({
             {submissionError}
           </p>
         )}
-        {hasSubmitted && hasErrors && (
+        {showErrorSummary && hasErrors && (
           <p className="form-error-summary field-wide" role="alert">
             Review the highlighted fields and try again.
           </p>
@@ -109,13 +117,15 @@ export function ServiceEventForm({
             value={values.title}
             maxLength={120}
             autoComplete="off"
-            aria-invalid={Boolean(errors.title)}
-            aria-describedby={errors.title ? 'service-title-error' : undefined}
+            aria-invalid={Boolean(displayedErrors.title)}
+            aria-describedby={
+              displayedErrors.title ? 'service-title-error' : undefined
+            }
             onChange={(event) => updateField('title', event.target.value)}
           />
-          {errors.title && (
+          {displayedErrors.title && (
             <p id="service-title-error" className="field-error">
-              {errors.title}
+              {displayedErrors.title}
             </p>
           )}
         </div>
@@ -127,17 +137,17 @@ export function ServiceEventForm({
             name="startsAt"
             type="datetime-local"
             value={values.startsAt}
-            aria-invalid={Boolean(errors.startsAt || timeRangeError)}
+            aria-invalid={Boolean(displayedErrors.startsAt || timeRangeError)}
             aria-describedby={descriptionIds(
               'service-time-zone',
-              errors.startsAt ? 'service-start-error' : undefined,
+              displayedErrors.startsAt ? 'service-start-error' : undefined,
               timeRangeError ? 'service-time-error' : undefined,
             )}
             onChange={(event) => updateField('startsAt', event.target.value)}
           />
-          {errors.startsAt && (
+          {displayedErrors.startsAt && (
             <p id="service-start-error" className="field-error">
-              {errors.startsAt}
+              {displayedErrors.startsAt}
             </p>
           )}
         </div>
@@ -149,17 +159,17 @@ export function ServiceEventForm({
             name="endsAt"
             type="datetime-local"
             value={values.endsAt}
-            aria-invalid={Boolean(errors.endsAt || timeRangeError)}
+            aria-invalid={Boolean(displayedErrors.endsAt || timeRangeError)}
             aria-describedby={descriptionIds(
               'service-time-zone',
-              errors.endsAt ? 'service-end-error' : undefined,
+              displayedErrors.endsAt ? 'service-end-error' : undefined,
               timeRangeError ? 'service-time-error' : undefined,
             )}
             onChange={(event) => updateField('endsAt', event.target.value)}
           />
-          {errors.endsAt && (
+          {displayedErrors.endsAt && (
             <p id="service-end-error" className="field-error">
-              {errors.endsAt}
+              {displayedErrors.endsAt}
             </p>
           )}
         </div>
@@ -183,15 +193,15 @@ export function ServiceEventForm({
             value={values.location}
             maxLength={120}
             autoComplete="off"
-            aria-invalid={Boolean(errors.location)}
+            aria-invalid={Boolean(displayedErrors.location)}
             aria-describedby={
-              errors.location ? 'service-location-error' : undefined
+              displayedErrors.location ? 'service-location-error' : undefined
             }
             onChange={(event) => updateField('location', event.target.value)}
           />
-          {errors.location && (
+          {displayedErrors.location && (
             <p id="service-location-error" className="field-error">
-              {errors.location}
+              {displayedErrors.location}
             </p>
           )}
         </div>

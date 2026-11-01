@@ -14,18 +14,13 @@ import {
   parseAssignmentConflict,
   parseAssignVolunteerResult,
 } from './assignmentValidation'
+import {
+  normalizeNetworkError,
+  responseProblem,
+} from '../../core/http/appProblem'
+import { retryTransientRead } from '../../core/http/retryTransientRead'
 
 type Fetch = typeof fetch
-
-export class AssignmentHttpError extends Error {
-  readonly status: number
-
-  constructor(status: number) {
-    super(`The assignment request failed with status ${status}.`)
-    this.name = 'AssignmentHttpError'
-    this.status = status
-  }
-}
 
 export class HttpAssignmentRepository implements AssignmentRepository {
   private readonly baseUrl: string
@@ -43,48 +38,53 @@ export class HttpAssignmentRepository implements AssignmentRepository {
   }
 
   readonly loadBoard = async (eventId: string, signal?: AbortSignal) => {
-    const response = await this.fetcher(
-      `${this.baseUrl}/${encodeURIComponent(eventId)}/assignment-board`,
-      { credentials: 'same-origin', signal },
-    )
-    await ensureSuccess(response)
-    return parseAssignmentBoard(await readJson(response))
+    return retryTransientRead(async () => {
+      const response = await this.fetcher(
+        `${this.baseUrl}/${encodeURIComponent(eventId)}/assignment-board`,
+        { credentials: 'same-origin', signal },
+      )
+      await ensureSuccess(response)
+      return parseAssignmentBoard(await readJson(response))
+    }, undefined, signal)
   }
 
   readonly assign = async (
     command: AssignVolunteerCommand,
     signal?: AbortSignal,
   ) => {
-    const response = await this.fetcher(
-      `${this.baseUrl}/${encodeURIComponent(command.eventId)}/assignments`,
-      {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-XSRF-TOKEN': readAntiforgeryToken(this.cookieSource),
+    try {
+      const response = await this.fetcher(
+        `${this.baseUrl}/${encodeURIComponent(command.eventId)}/assignments`,
+        {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-XSRF-TOKEN': readAntiforgeryToken(this.cookieSource),
+          },
+          body: JSON.stringify({
+            positionId: command.positionId,
+            volunteerId: command.volunteerId,
+            expectedEventVersion: command.expectedEventVersion,
+            clientRequestId: command.clientRequestId,
+          }),
+          signal,
         },
-        body: JSON.stringify({
-          positionId: command.positionId,
-          volunteerId: command.volunteerId,
-          expectedEventVersion: command.expectedEventVersion,
-          clientRequestId: command.clientRequestId,
-        }),
-        signal,
-      },
-    )
-
-    if (response.status === 409) {
-      const conflict = parseAssignmentConflict(await readJson(response))
-      throw new AssignmentConflictError(conflict.message, conflict.board)
+      )
+      if (response.status === 409) {
+        const conflict = parseAssignmentConflict(await readJson(response))
+        throw new AssignmentConflictError(conflict.message, conflict.board)
+      }
+      await ensureSuccess(response)
+      return parseAssignVolunteerResult(await readJson(response))
+    } catch (error) {
+      throw normalizeNetworkError(error)
     }
-    await ensureSuccess(response)
-    return parseAssignVolunteerResult(await readJson(response))
   }
 }
 
 async function ensureSuccess(response: Response) {
-  if (!response.ok) throw new AssignmentHttpError(response.status)
+  if (!response.ok) throw await responseProblem(response)
 }
 
 async function readJson(response: Response): Promise<unknown> {

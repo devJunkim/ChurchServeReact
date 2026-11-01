@@ -39,9 +39,9 @@ describe('HttpServiceEventRepository', () => {
     )
   })
 
-  it('throws a status-aware error for non-success responses', async () => {
+  it('normalizes non-success responses into application problems', async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
-      new Response(null, { status: 503 }),
+      new Response(null, { status: 403 }),
     )
     const repository = new HttpServiceEventRepository(
       '/api/service-events',
@@ -50,10 +50,41 @@ describe('HttpServiceEventRepository', () => {
 
     await expect(repository.list()).rejects.toEqual(
       expect.objectContaining({
-        name: 'ServiceEventHttpError',
-        status: 503,
+        name: 'AppProblemError',
+        problem: { kind: 'forbidden' },
       }),
     )
+  })
+
+  it('retries a transient list read but not a creation write', async () => {
+    vi.useFakeTimers()
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValueOnce(Response.json(seededServiceEvents))
+    const repository = new HttpServiceEventRepository(
+      '/api/service-events',
+      fetcher,
+      () => 'XSRF-TOKEN=token',
+    )
+
+    const list = repository.list()
+    await vi.runAllTimersAsync()
+    await expect(list).resolves.toEqual(seededServiceEvents)
+    expect(fetcher).toHaveBeenCalledTimes(2)
+
+    fetcher.mockReset()
+    fetcher.mockResolvedValue(new Response(null, { status: 503 }))
+    await expect(
+      repository.create({
+        title: 'Prayer Night',
+        startsAt: '2026-11-06T19:00:00-05:00',
+        endsAt: '2026-11-06T20:00:00-05:00',
+        location: 'Chapel',
+      }),
+    ).rejects.toMatchObject({ problem: { kind: 'unavailable' } })
+    expect(fetcher).toHaveBeenCalledOnce()
+    vi.useRealTimers()
   })
 
   it('rejects a successful response with an invalid body', async () => {

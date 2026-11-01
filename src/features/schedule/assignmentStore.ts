@@ -10,6 +10,10 @@ import {
   type AssignmentRepository,
 } from './assignmentRepository'
 import { isAbortError } from './requestError'
+import {
+  toAppProblem,
+  unexpectedProblemMessage,
+} from '../../core/http/appProblem'
 
 export type AssignmentNotice = {
   readonly kind: 'success' | 'error' | 'conflict'
@@ -118,7 +122,7 @@ export class AssignmentStore {
         this.setSnapshot({
           status: 'error',
           eventId,
-          message: 'The assignment board did not load. Try again.',
+          message: assignmentLoadMessage(error),
         })
       })
       .finally(() => {
@@ -224,7 +228,7 @@ export class AssignmentStore {
           ),
           notice: {
             kind: 'error',
-            message: 'The assignment was not saved. Try again.',
+            message: assignmentSaveMessage(error),
           },
         })
       })
@@ -316,6 +320,42 @@ export class AssignmentStore {
   private setSnapshot(snapshot: AssignmentSnapshot) {
     this.snapshot = snapshot
     for (const listener of this.listeners) listener()
+  }
+}
+
+function assignmentLoadMessage(error: unknown) {
+  const problem = toAppProblem(error)
+  switch (problem.kind) {
+    case 'unauthenticated':
+      return 'Your session expired. Sign in again, then reload assignments.'
+    case 'forbidden':
+      return 'Your account does not have permission to view assignments.'
+    case 'unavailable':
+      return 'The assignment service is temporarily unavailable. Try again.'
+    default:
+      return unexpectedProblemMessage(
+        problem,
+        'The assignment board could not be loaded. Try again.',
+      )
+  }
+}
+
+function assignmentSaveMessage(error: unknown) {
+  const problem = toAppProblem(error)
+  switch (problem.kind) {
+    case 'unauthenticated':
+      return 'Your session expired. The assignment was not saved.'
+    case 'forbidden':
+      return 'Your account does not have permission to assign volunteers.'
+    case 'validation':
+      return 'The assignment was rejected. Refresh the schedule and try again.'
+    case 'unavailable':
+      return 'The assignment was not saved because the service is unavailable. Try again.'
+    default:
+      return unexpectedProblemMessage(
+        problem,
+        'The assignment was not saved. Try again.',
+      )
   }
 }
 

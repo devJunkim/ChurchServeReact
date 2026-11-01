@@ -57,7 +57,7 @@ describe('SchedulePage', () => {
     renderSchedule(repositoryWithList(list))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'The scheduling service did not respond.',
+      'The schedule could not be loaded.',
     )
 
     await user.click(screen.getByRole('button', { name: 'Try again' }))

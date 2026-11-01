@@ -10,6 +10,10 @@ export function ServiceEventDetailErrorPage() {
   const error = useRouteError()
   const revalidator = useRevalidator()
   const isNotFound = isRouteErrorResponse(error) && error.status === 404
+  const isUnauthenticated =
+    isRouteErrorResponse(error) && error.status === 401
+  const isForbidden = isRouteErrorResponse(error) && error.status === 403
+  const isUnavailable = isRouteErrorResponse(error) && error.status === 503
 
   return (
     <section className="schedule-route-page" aria-labelledby="detail-heading">
@@ -27,7 +31,15 @@ export function ServiceEventDetailErrorPage() {
       ) : (
         <div className="state-panel error-state" role="alert">
           <h1 id="detail-heading">We could not load this service</h1>
-          <p>The scheduling service did not respond.</p>
+          <p>
+            {isUnauthenticated
+              ? 'Your session expired. Sign in again, then retry this service.'
+              : isForbidden
+                ? 'Your account does not have permission to view this service.'
+                : isUnavailable
+                  ? 'The scheduling service is temporarily unavailable.'
+                  : 'An unexpected error prevented this service from loading.'}
+          </p>
           <button
             className="retry-action"
             type="button"

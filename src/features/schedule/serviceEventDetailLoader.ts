@@ -1,6 +1,7 @@
 import type { LoaderFunction } from 'react-router'
 import { isAbortError } from './requestError'
 import type { ScheduleStore } from './scheduleStore'
+import { toAppProblem } from '../../core/http/appProblem'
 
 export function createServiceEventDetailLoader(
   store: Pick<ScheduleStore, 'findById'>,
@@ -23,10 +24,16 @@ export function createServiceEventDetailLoader(
         throw error
       }
 
-      throw new Response(null, {
-        status: 503,
-        statusText: 'The scheduling service did not respond.',
-      })
+      const problem = toAppProblem(error)
+      const status =
+        problem.kind === 'unauthenticated'
+          ? 401
+          : problem.kind === 'forbidden'
+            ? 403
+            : problem.kind === 'unavailable'
+              ? 503
+              : 500
+      throw new Response(null, { status })
     }
 
     if (!event) {

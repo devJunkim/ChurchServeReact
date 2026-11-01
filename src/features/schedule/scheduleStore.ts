@@ -4,6 +4,10 @@ import { reconcileByKey } from '../../core/data/reconcileByKey'
 import { isAbortError } from './requestError'
 import { equalServiceEvent, type ServiceEvent } from './serviceEvent'
 import type { ServiceEventRepository } from './serviceEventRepository'
+import {
+  toAppProblem,
+  unexpectedProblemMessage,
+} from '../../core/http/appProblem'
 
 type ScheduleIdleSnapshot = {
   readonly status: 'idle'
@@ -89,7 +93,7 @@ export class ScheduleStore {
         if (this.activeListRequest !== request || isAbortError(error)) return
         this.setSnapshot({
           status: 'error',
-          message: 'The scheduling service did not respond. Try again.',
+          message: scheduleLoadMessage(error),
         })
       })
       .finally(() => {
@@ -192,6 +196,23 @@ export class ScheduleStore {
     for (const listener of this.listeners) {
       listener()
     }
+  }
+}
+
+function scheduleLoadMessage(error: unknown) {
+  const problem = toAppProblem(error)
+  switch (problem.kind) {
+    case 'unauthenticated':
+      return 'Your session expired. Sign in again, then retry the schedule.'
+    case 'forbidden':
+      return 'Your account does not have permission to view this schedule.'
+    case 'unavailable':
+      return 'The schedule service is temporarily unavailable. Try again.'
+    default:
+      return unexpectedProblemMessage(
+        problem,
+        'The schedule could not be loaded. Try again.',
+      )
   }
 }
 

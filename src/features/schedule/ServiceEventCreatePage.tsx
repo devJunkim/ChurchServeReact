@@ -10,6 +10,11 @@ import type { CreateServiceEventCommand } from './createServiceEvent'
 import { isAbortError } from './requestError'
 import { useScheduleStore } from './scheduleStoreContext'
 import './schedule.css'
+import {
+  toAppProblem,
+  unexpectedProblemMessage,
+} from '../../core/http/appProblem'
+import type { ServiceEventFormErrors } from './createServiceEvent'
 
 export function ServiceEventCreatePage() {
   const navigate = useNavigate()
@@ -17,6 +22,7 @@ export function ServiceEventCreatePage() {
   const activeRequest = useRef<AbortController | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submissionError, setSubmissionError] = useState<string>()
+  const [serverErrors, setServerErrors] = useState<ServiceEventFormErrors>()
   const [isDirty, setIsDirty] = useState(false)
   const hasSaved = useRef(false)
   const blocker = useBlocker(
@@ -55,6 +61,7 @@ export function ServiceEventCreatePage() {
     activeRequest.current = controller
     setIsSubmitting(true)
     setSubmissionError(undefined)
+    setServerErrors(undefined)
 
     try {
       const event = await store.create(command, controller.signal)
@@ -64,9 +71,18 @@ export function ServiceEventCreatePage() {
       await navigate(`/schedule/${event.id}`)
     } catch (error) {
       if (!isAbortError(error)) {
-        setSubmissionError(
-          'We could not create the service event. Your entries are still here.',
-        )
+        const problem = toAppProblem(error)
+        if (problem.kind === 'validation') {
+          const fieldErrors = serviceEventServerErrors(problem.fields)
+          if (Object.keys(fieldErrors).length > 0) {
+            setServerErrors(fieldErrors)
+            setSubmissionError(undefined)
+          } else {
+            setSubmissionError(createEventMessage(problem))
+          }
+        } else {
+          setSubmissionError(createEventMessage(problem))
+        }
       }
       throw error
     } finally {
@@ -92,6 +108,8 @@ export function ServiceEventCreatePage() {
       <ServiceEventForm
         isSubmitting={isSubmitting}
         submissionError={submissionError}
+        serverErrors={serverErrors}
+        onServerErrorsClear={() => setServerErrors(undefined)}
         onDirtyChange={setIsDirty}
         onSubmit={createServiceEvent}
       />
@@ -123,4 +141,34 @@ export function ServiceEventCreatePage() {
       )}
     </section>
   )
+}
+
+function serviceEventServerErrors(
+  fields: Readonly<Record<string, string>>,
+): ServiceEventFormErrors {
+  const errors: ServiceEventFormErrors = {}
+  for (const field of ['title', 'startsAt', 'endsAt', 'location'] as const) {
+    if (fields[field]) errors[field] = fields[field]
+  }
+  return errors
+}
+
+function createEventMessage(problem: ReturnType<typeof toAppProblem>) {
+  switch (problem.kind) {
+    case 'validation':
+      return 'The event was rejected. Review its details and try again.'
+    case 'unauthenticated':
+      return 'Your session expired. Sign in again before creating this event.'
+    case 'forbidden':
+      return 'Your account does not have permission to create service events.'
+    case 'conflict':
+      return 'The schedule changed while you were editing. Review it and try again.'
+    case 'unavailable':
+      return 'The event was not saved because the service is unavailable. Your entries are still here.'
+    default:
+      return unexpectedProblemMessage(
+        problem,
+        'The event could not be created. Your entries are still here.',
+      )
+  }
 }

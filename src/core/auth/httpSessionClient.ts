@@ -5,18 +5,13 @@ import {
 } from './antiforgery'
 import type { CurrentUser, SignInCommand } from './session'
 import type { SessionClient } from './sessionClient'
+import {
+  normalizeNetworkError,
+  responseProblem,
+} from '../http/appProblem'
+import { retryTransientRead } from '../http/retryTransientRead'
 
 type Fetch = typeof fetch
-
-export class SessionHttpError extends Error {
-  readonly status: number
-
-  constructor(status: number) {
-    super(`The session request failed with status ${status}.`)
-    this.name = 'SessionHttpError'
-    this.status = status
-  }
-}
 
 export class InvalidSessionResponseError extends Error {
   constructor() {
@@ -41,56 +36,58 @@ export class HttpSessionClient implements SessionClient {
   }
 
   readonly restore = async (signal?: AbortSignal) => {
-    const response = await this.fetcher(this.baseUrl, {
-      credentials: 'same-origin',
-      signal,
-    })
-
-    if (response.status === 401) {
-      return undefined
-    }
-
-    await ensureSuccess(response)
-    return parseCurrentUser(await readJson(response))
+    return retryTransientRead(async () => {
+      const response = await this.fetcher(this.baseUrl, {
+        credentials: 'same-origin',
+        signal,
+      })
+      if (response.status === 401) return undefined
+      await ensureSuccess(response)
+      return parseCurrentUser(await readJson(response))
+    }, undefined, signal)
   }
 
   readonly signIn = async (
     command: SignInCommand,
     signal?: AbortSignal,
   ) => {
-    const response = await this.fetcher(`${this.baseUrl}/sign-in`, {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-XSRF-TOKEN': readAntiforgeryToken(this.cookieSource),
-      },
-      body: JSON.stringify(command),
-      signal,
-    })
-
-    await ensureSuccess(response)
-    return parseCurrentUser(await readJson(response))
+    try {
+      const response = await this.fetcher(`${this.baseUrl}/sign-in`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-XSRF-TOKEN': readAntiforgeryToken(this.cookieSource),
+        },
+        body: JSON.stringify(command),
+        signal,
+      })
+      await ensureSuccess(response)
+      return parseCurrentUser(await readJson(response))
+    } catch (error) {
+      throw normalizeNetworkError(error)
+    }
   }
 
   readonly signOut = async (signal?: AbortSignal) => {
-    const response = await this.fetcher(this.baseUrl, {
-      method: 'DELETE',
-      credentials: 'same-origin',
-      headers: {
-        'X-XSRF-TOKEN': readAntiforgeryToken(this.cookieSource),
-      },
-      signal,
-    })
-
-    await ensureSuccess(response)
+    try {
+      const response = await this.fetcher(this.baseUrl, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: {
+          'X-XSRF-TOKEN': readAntiforgeryToken(this.cookieSource),
+        },
+        signal,
+      })
+      await ensureSuccess(response)
+    } catch (error) {
+      throw normalizeNetworkError(error)
+    }
   }
 }
 
 async function ensureSuccess(response: Response) {
-  if (!response.ok) {
-    throw new SessionHttpError(response.status)
-  }
+  if (!response.ok) throw await responseProblem(response)
 }
 
 async function readJson(response: Response): Promise<unknown> {

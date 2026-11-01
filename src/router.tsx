@@ -11,6 +11,7 @@ import type {
   VolunteerFeatureLoader,
 } from './shared/routing/lazyFeature'
 import { RouteLoadingPage } from './shared/ui/RouteLoadingPage'
+import { AppErrorPage } from './shared/ui/AppErrorPage'
 
 type AppRouteDependencies = {
   sessionClient: SessionClient
@@ -45,6 +46,7 @@ export function createAppRoutes({
     {
       path: '/',
       element: <App sessionClient={sessionClient} />,
+      ErrorBoundary: AppErrorPage,
       children: [
         { index: true, Component: HomePage },
         { path: 'sign-in', Component: SignInPage },
