@@ -82,10 +82,7 @@ export function AssignmentBoardPanel({ event }: AssignmentBoardPanelProps) {
 
           <ul className="position-list">
             {board.positions.map((position) => {
-              const assignment = board.assignments.find(
-                (item) =>
-                  item.positionId === position.id && item.status !== 'declined',
-              )
+              const assignment = store.assignmentFor(position.id)
               const eligibleVolunteers = store.volunteersFor(position)
               const selectedVolunteer = selectedVolunteers[position.id] ?? ''
 

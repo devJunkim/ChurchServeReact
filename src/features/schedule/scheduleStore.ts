@@ -1,7 +1,8 @@
 import type { CreateServiceEventCommand } from './createServiceEvent'
 import { RequestCache } from '../../core/data/requestCache'
+import { reconcileByKey } from '../../core/data/reconcileByKey'
 import { isAbortError } from './requestError'
-import type { ServiceEvent } from './serviceEvent'
+import { equalServiceEvent, type ServiceEvent } from './serviceEvent'
 import type { ServiceEventRepository } from './serviceEventRepository'
 
 type ScheduleIdleSnapshot = {
@@ -39,6 +40,7 @@ export class ScheduleStore {
   private readonly listCache: RequestCache<'events', readonly ServiceEvent[]>
   private readonly eventCache: RequestCache<string, ServiceEvent | undefined>
   private snapshot: ScheduleSnapshot = idleSnapshot
+  private previousEvents: readonly ServiceEvent[] = []
   private readonly listeners = new Set<Listener>()
   private activeListRequest?: Promise<void>
 
@@ -67,7 +69,7 @@ export class ScheduleStore {
     if (!force) {
       const cached = this.listCache.read('events')
       if (cached.hit) {
-        this.applyEvents(cached.value)
+        this.applyEvents(cached.value, false)
         return Promise.resolve()
       }
     }
@@ -142,7 +144,6 @@ export class ScheduleStore {
           ? { ...event, assignedPositions, version }
           : event,
       )
-      this.listCache.set('events', events)
       this.applyEvents(events)
     } else {
       this.listCache.clear()
@@ -153,6 +154,7 @@ export class ScheduleStore {
     this.listCache.clear()
     this.eventCache.clear()
     this.activeListRequest = undefined
+    this.previousEvents = []
     this.setSnapshot(idleSnapshot)
   }
 
@@ -160,12 +162,20 @@ export class ScheduleStore {
     this.clear()
   }
 
-  private applyEvents(events: readonly ServiceEvent[]) {
-    this.cacheEvents(events)
+  private applyEvents(events: readonly ServiceEvent[], retain = true) {
+    const reconciled = reconcileByKey(
+      this.previousEvents,
+      events,
+      (event) => event.id,
+      equalServiceEvent,
+    )
+    this.previousEvents = reconciled
+    if (retain) this.listCache.set('events', reconciled)
+    this.cacheEvents(reconciled)
     this.setSnapshot({
       status: 'ready',
-      events,
-      totalOpenPositions: countOpenPositions(events),
+      events: reconciled,
+      totalOpenPositions: countOpenPositions(reconciled),
     })
   }
 
