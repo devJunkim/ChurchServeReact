@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { AssignmentConflictError } from './assignmentRepository'
-import {
-  AssignmentHttpError,
-  HttpAssignmentRepository,
-} from './httpAssignmentRepository'
+import { HttpAssignmentRepository } from './httpAssignmentRepository'
 import { InvalidAssignmentResponseError } from './assignmentValidation'
 
 describe('HttpAssignmentRepository', () => {
@@ -107,11 +104,12 @@ describe('HttpAssignmentRepository', () => {
 
     const failedRepository = new HttpAssignmentRepository(
       '/api/service-events',
-      vi.fn().mockResolvedValue(new Response('offline', { status: 503 })),
+      vi.fn().mockResolvedValue(new Response(null, { status: 403 })),
     )
-    await expect(failedRepository.loadBoard('event-1')).rejects.toEqual(
-      new AssignmentHttpError(503),
-    )
+    await expect(failedRepository.loadBoard('event-1')).rejects.toMatchObject({
+      name: 'AppProblemError',
+      problem: { kind: 'forbidden' },
+    })
   })
 })
 

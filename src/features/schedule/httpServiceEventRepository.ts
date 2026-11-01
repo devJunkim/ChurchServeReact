@@ -11,18 +11,13 @@ import {
   parseServiceEvent,
   parseServiceEvents,
 } from './serviceEventValidation'
+import {
+  normalizeNetworkError,
+  responseProblem,
+} from '../../core/http/appProblem'
+import { retryTransientRead } from '../../core/http/retryTransientRead'
 
 type Fetch = typeof fetch
-
-export class ServiceEventHttpError extends Error {
-  readonly status: number
-
-  constructor(status: number) {
-    super(`The service-event request failed with status ${status}.`)
-    this.name = 'ServiceEventHttpError'
-    this.status = status
-  }
-}
 
 export class HttpServiceEventRepository implements ServiceEventRepository {
   private readonly baseUrl: string
@@ -40,52 +35,53 @@ export class HttpServiceEventRepository implements ServiceEventRepository {
   }
 
   readonly list = async (signal?: AbortSignal) => {
-    const response = await this.fetcher(this.baseUrl, {
-      credentials: 'same-origin',
-      signal,
-    })
-    await ensureSuccess(response)
-    return parseServiceEvents(await readJson(response))
+    return retryTransientRead(async () => {
+      const response = await this.fetcher(this.baseUrl, {
+        credentials: 'same-origin',
+        signal,
+      })
+      await ensureSuccess(response)
+      return parseServiceEvents(await readJson(response))
+    }, undefined, signal)
   }
 
   readonly findById = async (eventId: string, signal?: AbortSignal) => {
-    const response = await this.fetcher(
-      `${this.baseUrl}/${encodeURIComponent(eventId)}`,
-      { credentials: 'same-origin', signal },
-    )
-
-    if (response.status === 404) {
-      return undefined
-    }
-
-    await ensureSuccess(response)
-    return parseServiceEvent(await readJson(response))
+    return retryTransientRead(async () => {
+      const response = await this.fetcher(
+        `${this.baseUrl}/${encodeURIComponent(eventId)}`,
+        { credentials: 'same-origin', signal },
+      )
+      if (response.status === 404) return undefined
+      await ensureSuccess(response)
+      return parseServiceEvent(await readJson(response))
+    }, undefined, signal)
   }
 
   readonly create = async (
     command: CreateServiceEventCommand,
     signal?: AbortSignal,
   ): Promise<ServiceEvent> => {
-    const response = await this.fetcher(this.baseUrl, {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-XSRF-TOKEN': readAntiforgeryToken(this.cookieSource),
-      },
-      body: JSON.stringify(command),
-      signal,
-    })
-
-    await ensureSuccess(response)
-    return parseServiceEvent(await readJson(response))
+    try {
+      const response = await this.fetcher(this.baseUrl, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-XSRF-TOKEN': readAntiforgeryToken(this.cookieSource),
+        },
+        body: JSON.stringify(command),
+        signal,
+      })
+      await ensureSuccess(response)
+      return parseServiceEvent(await readJson(response))
+    } catch (error) {
+      throw normalizeNetworkError(error)
+    }
   }
 }
 
 async function ensureSuccess(response: Response) {
-  if (!response.ok) {
-    throw new ServiceEventHttpError(response.status)
-  }
+  if (!response.ok) throw await responseProblem(response)
 }
 
 async function readJson(response: Response): Promise<unknown> {

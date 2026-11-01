@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { SessionHttpError } from './httpSessionClient'
 import { safeReturnTo } from './safeReturnTo'
 import { useSession } from './sessionContext'
 import './auth.css'
+import { toAppProblem } from '../http/appProblem'
 
 export function SignInPage() {
   const navigate = useNavigate()
@@ -29,10 +29,13 @@ export function SignInPage() {
       setPassword('')
       await navigate(returnTo, { replace: true })
     } catch (error) {
+      const problem = toAppProblem(error)
       setErrorMessage(
-        error instanceof SessionHttpError && error.status === 401
+        problem.kind === 'unauthenticated'
           ? 'The email or password was incorrect.'
-          : 'Sign-in is unavailable. Try again.',
+          : problem.kind === 'forbidden'
+            ? 'This account cannot sign in to ChurchServe.'
+            : 'Sign-in is unavailable. Try again.',
       )
     } finally {
       setIsSubmitting(false)

@@ -14,20 +14,21 @@ import { FakeAssignmentRepository } from '../../testing/FakeAssignmentRepository
 import { createServiceEventDetailLoader } from './serviceEventDetailLoader'
 import type { ServiceEventRepository } from './serviceEventRepository'
 import { seededServiceEvents } from './seededServiceEvents'
+import { AppProblemError } from '../../core/http/appProblem'
 
 describe('service event request states', () => {
   it('retries a failed detail loader', async () => {
     const user = userEvent.setup()
     const findById = vi
       .fn<ServiceEventRepository['findById']>()
-      .mockRejectedValueOnce(new Error('Unavailable'))
+      .mockRejectedValueOnce(new AppProblemError({ kind: 'unavailable' }))
       .mockResolvedValueOnce(seededServiceEvents[0])
     const repository = createRepository({ findById })
 
     renderRoute('/schedule/sunday-2026-11-01', repository)
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'The scheduling service did not respond.',
+      'The scheduling service is temporarily unavailable.',
     )
 
     await user.click(screen.getByRole('button', { name: 'Try again' }))
@@ -78,8 +79,33 @@ describe('service event request states', () => {
     await user.click(screen.getByRole('button', { name: 'Add to schedule' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'We could not create the service event.',
+      'The event could not be created.',
     )
+    expect(screen.getByLabelText('Service name')).toHaveValue('Prayer Night')
+  })
+
+  it('renders known server validation beside the affected field', async () => {
+    const user = userEvent.setup()
+    const repository = createRepository({
+      create: vi.fn().mockRejectedValue(
+        new AppProblemError({
+          kind: 'validation',
+          fields: {
+            title: 'A service with this name already exists.',
+            unknownField: 'Do not render this field.',
+          },
+        }),
+      ),
+    })
+    renderRoute('/schedule/new', repository)
+
+    await fillRequiredFields(user)
+    await user.click(screen.getByRole('button', { name: 'Add to schedule' }))
+
+    expect(
+      await screen.findByText('A service with this name already exists.'),
+    ).toBeVisible()
+    expect(screen.queryByText('Do not render this field.')).not.toBeInTheDocument()
     expect(screen.getByLabelText('Service name')).toHaveValue('Prayer Night')
   })
 

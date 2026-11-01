@@ -31,6 +31,22 @@ describe('HttpSessionClient', () => {
     await expect(client.restore()).resolves.toBeUndefined()
   })
 
+  it('keeps a 401 sign-in as an unauthenticated application problem', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(null, { status: 401 }),
+    )
+    const client = new HttpSessionClient(
+      '/api/session',
+      fetcher,
+      () => 'XSRF-TOKEN=token',
+    )
+
+    await expect(
+      client.signIn({ email: currentUser.email, password: 'wrong' }),
+    ).rejects.toMatchObject({ problem: { kind: 'unauthenticated' } })
+    expect(fetcher).toHaveBeenCalledOnce()
+  })
+
   it('rejects a successful response with an invalid user contract', async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
       Response.json({ id: 'incomplete' }),
