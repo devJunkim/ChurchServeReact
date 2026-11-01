@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://localhost:5100',
+      '/api': process.env.CHURCHSERVE_API_URL ?? 'http://localhost:5100',
     },
   },
 })

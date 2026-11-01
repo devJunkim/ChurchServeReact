@@ -31,7 +31,7 @@ export class HttpSessionClient implements SessionClient {
 
   constructor(
     baseUrl = '/api/session',
-    fetcher: Fetch = globalThis.fetch,
+    fetcher: Fetch = globalThis.fetch.bind(globalThis),
     cookieSource: CookieSource = browserCookieSource,
   ) {
     this.baseUrl = baseUrl.replace(/\/$/, '')

@@ -119,6 +119,16 @@ dotnet test server/ChurchServe.Api.Tests/ChurchServe.Api.Tests.csproj --configur
 dotnet ef migrations has-pending-model-changes --project server/ChurchServe.Api
 ```
 
+Run the isolated Chromium journeys after installing Playwright's pinned browser:
+
+```bash
+npx playwright install chromium
+npm run test:e2e
+```
+
+The browser suite starts its own React and API processes, uses a testing-only
+SQLite database, and does not require the development account in user-secrets.
+
 ## Tooling notes
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.

@@ -13,8 +13,24 @@ public static class DatabaseInitializer
         var dbContext = scope.ServiceProvider.GetRequiredService<ChurchServeDbContext>();
 
         await dbContext.Database.MigrateAsync();
+        await SeedAsync(dbContext, CancellationToken.None);
+    }
 
-        if (!await dbContext.ServiceEvents.AnyAsync())
+    public static async Task ResetAsync(
+        ChurchServeDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        await dbContext.Database.EnsureDeletedAsync(cancellationToken);
+        dbContext.ChangeTracker.Clear();
+        await dbContext.Database.MigrateAsync(cancellationToken);
+        await SeedAsync(dbContext, cancellationToken);
+    }
+
+    private static async Task SeedAsync(
+        ChurchServeDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        if (!await dbContext.ServiceEvents.AnyAsync(cancellationToken))
         {
             dbContext.ServiceEvents.AddRange(
                 new ServiceEventEntity
@@ -41,7 +57,7 @@ public static class DatabaseInitializer
                 });
         }
 
-        if (!await dbContext.Volunteers.AnyAsync())
+        if (!await dbContext.Volunteers.AnyAsync(cancellationToken))
         {
             dbContext.Volunteers.AddRange(
                 CreateVolunteer("alex-morgan", "Alex Morgan", "technical", "worship"),
@@ -52,7 +68,7 @@ public static class DatabaseInitializer
                 CreateVolunteer("sam-wilson", "Sam Wilson", "hospitality", "technical"));
         }
 
-        if (!await dbContext.MinistryPositions.AnyAsync())
+        if (!await dbContext.MinistryPositions.AnyAsync(cancellationToken))
         {
             dbContext.MinistryPositions.AddRange(
                 CreatePosition(
@@ -85,7 +101,7 @@ public static class DatabaseInitializer
                     "2026-11-05T20:30:00-05:00"));
         }
 
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
     private static Volunteer CreateVolunteer(
