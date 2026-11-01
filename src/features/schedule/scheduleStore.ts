@@ -1,4 +1,5 @@
 import type { CreateServiceEventCommand } from './createServiceEvent'
+import { RequestCache } from '../../core/data/requestCache'
 import { isAbortError } from './requestError'
 import type { ServiceEvent } from './serviceEvent'
 import type { ServiceEventRepository } from './serviceEventRepository'
@@ -35,16 +36,24 @@ const loadingSnapshot: ScheduleLoadingSnapshot = { status: 'loading' }
 
 export class ScheduleStore {
   private readonly repository: ServiceEventRepository
+  private readonly listCache: RequestCache<'events', readonly ServiceEvent[]>
+  private readonly eventCache: RequestCache<string, ServiceEvent | undefined>
   private snapshot: ScheduleSnapshot = idleSnapshot
   private readonly listeners = new Set<Listener>()
-  private readonly eventCache = new Map<string, ServiceEvent>()
-  private activeListRequest?: {
-    readonly controller: AbortController
-    readonly promise: Promise<void>
-  }
+  private activeListRequest?: Promise<void>
 
-  constructor(repository: ServiceEventRepository) {
+  constructor(repository: ServiceEventRepository, now: () => number = Date.now) {
     this.repository = repository
+    this.listCache = new RequestCache({
+      maxAgeMs: 30_000,
+      maxEntries: 1,
+      now,
+    })
+    this.eventCache = new RequestCache({
+      maxAgeMs: 60_000,
+      maxEntries: 20,
+      now,
+    })
   }
 
   readonly subscribe = (listener: Listener) => {
@@ -55,82 +64,64 @@ export class ScheduleStore {
   readonly getSnapshot = () => this.snapshot
 
   load(force = false): Promise<void> {
-    if (!force && this.snapshot.status === 'ready') {
-      return Promise.resolve()
+    if (!force) {
+      const cached = this.listCache.read('events')
+      if (cached.hit) {
+        this.applyEvents(cached.value)
+        return Promise.resolve()
+      }
     }
 
     if (!force && this.activeListRequest) {
-      return this.activeListRequest.promise
+      return this.activeListRequest
     }
 
-    this.activeListRequest?.controller.abort()
-    const controller = new AbortController()
     this.setSnapshot(loadingSnapshot)
-
-    const promise = this.repository
-      .list(controller.signal)
+    const request = this.listCache
+      .getOrLoad('events', (signal) => this.repository.list(signal), force)
       .then((events) => {
-        if (
-          controller.signal.aborted ||
-          this.activeListRequest?.controller !== controller
-        ) {
-          return
-        }
-
-        this.cacheEvents(events)
-        this.setSnapshot({
-          status: 'ready',
-          events,
-          totalOpenPositions: countOpenPositions(events),
-        })
+        if (this.activeListRequest !== request) return
+        this.applyEvents(events)
       })
       .catch((error: unknown) => {
-        if (
-          controller.signal.aborted ||
-          this.activeListRequest?.controller !== controller ||
-          isAbortError(error)
-        ) {
-          return
-        }
-
+        if (this.activeListRequest !== request || isAbortError(error)) return
         this.setSnapshot({
           status: 'error',
           message: 'The scheduling service did not respond. Try again.',
         })
       })
       .finally(() => {
-        if (this.activeListRequest?.controller === controller) {
+        if (this.activeListRequest === request) {
           this.activeListRequest = undefined
         }
       })
 
-    this.activeListRequest = { controller, promise }
-    return promise
+    this.activeListRequest = request
+    return request
   }
 
   retry() {
     return this.load(true)
   }
 
-  async findById(eventId: string, signal?: AbortSignal) {
+  findById(eventId: string, signal?: AbortSignal) {
     signal?.throwIfAborted()
-    const cachedEvent = this.eventCache.get(eventId)
-    if (cachedEvent) {
-      return cachedEvent
+    const cached = this.eventCache.read(eventId)
+    if (cached.hit) {
+      return Promise.resolve(cached.value)
     }
 
-    const event = await this.repository.findById(eventId, signal)
-    signal?.throwIfAborted()
-    if (event) {
-      this.cacheEvents([event])
-    }
-    return event
+    return this.eventCache.getOrLoad(eventId, (cacheSignal) => {
+      const combinedSignal = combineSignals(signal, cacheSignal)
+      return this.repository.findById(eventId, combinedSignal)
+    })
   }
 
   async create(command: CreateServiceEventCommand, signal?: AbortSignal) {
     const event = await this.repository.create(command, signal)
     signal?.throwIfAborted()
-    this.cacheEvents([event])
+    this.listCache.clear()
+    this.eventCache.set(event.id, event)
     return event
   }
 
@@ -139,35 +130,47 @@ export class ScheduleStore {
     assignedPositions: number,
     version: number,
   ) {
-    const current = this.eventCache.get(eventId)
-    if (!current || version < current.version) return
-
-    const updated = { ...current, assignedPositions, version }
-    this.eventCache.set(eventId, updated)
+    const cached = this.eventCache.read(eventId)
+    const current = cached.hit ? cached.value : undefined
+    if (current && version >= current.version) {
+      this.eventCache.set(eventId, { ...current, assignedPositions, version })
+    }
 
     if (this.snapshot.status === 'ready') {
       const events = this.snapshot.events.map((event) =>
-        event.id === eventId ? updated : event,
+        event.id === eventId && version >= event.version
+          ? { ...event, assignedPositions, version }
+          : event,
       )
-      this.setSnapshot({
-        status: 'ready',
-        events,
-        totalOpenPositions: countOpenPositions(events),
-      })
+      this.listCache.set('events', events)
+      this.applyEvents(events)
+    } else {
+      this.listCache.clear()
     }
   }
 
-  dispose() {
-    this.activeListRequest?.controller.abort()
-    this.activeListRequest = undefined
+  clear() {
+    this.listCache.clear()
     this.eventCache.clear()
+    this.activeListRequest = undefined
     this.setSnapshot(idleSnapshot)
   }
 
+  dispose() {
+    this.clear()
+  }
+
+  private applyEvents(events: readonly ServiceEvent[]) {
+    this.cacheEvents(events)
+    this.setSnapshot({
+      status: 'ready',
+      events,
+      totalOpenPositions: countOpenPositions(events),
+    })
+  }
+
   private cacheEvents(events: readonly ServiceEvent[]) {
-    for (const event of events) {
-      this.eventCache.set(event.id, event)
-    }
+    for (const event of events) this.eventCache.set(event.id, event)
   }
 
   private setSnapshot(snapshot: ScheduleSnapshot) {
@@ -180,6 +183,13 @@ export class ScheduleStore {
       listener()
     }
   }
+}
+
+function combineSignals(
+  external: AbortSignal | undefined,
+  internal: AbortSignal,
+) {
+  return external ? AbortSignal.any([external, internal]) : internal
 }
 
 function countOpenPositions(events: readonly ServiceEvent[]) {
