@@ -66,6 +66,8 @@ describe('AssignmentStore', () => {
       notice: { kind: 'success', message: 'Alex Morgan was assigned.' },
     })
     expect(ready(store).assignments[0].syncStatus).toBe('confirmed')
+    await store.load('event-1')
+    expect(repository.loadBoard).toHaveBeenCalledTimes(1)
   })
 
   it('rolls back only the failed optimistic operation', async () => {
@@ -136,6 +138,48 @@ describe('AssignmentStore', () => {
     })
     expect(repository.assignCalls).toEqual([])
   })
+
+  it('reuses a fresh board and reloads it after fifteen seconds', async () => {
+    let now = 0
+    const repository = staticRepository()
+    const store = new AssignmentStore(
+      repository,
+      undefined,
+      undefined,
+      () => now,
+    )
+
+    await store.load('event-1')
+    now = 15_000
+    await store.load('event-1')
+    now = 15_001
+    await store.load('event-1')
+
+    expect(repository.loadBoard).toHaveBeenCalledTimes(2)
+  })
+
+  it('clears retained boards at the feature identity boundary', async () => {
+    const repository = staticRepository()
+    const store = new AssignmentStore(repository)
+    await store.load('event-1')
+
+    store.clear()
+    await store.load('event-1')
+
+    expect(repository.loadBoard).toHaveBeenCalledTimes(2)
+  })
+
+  it('leaves the board invalidated after an ordinary mutation failure', async () => {
+    const repository = staticRepository()
+    const store = new AssignmentStore(repository, undefined, () => 'request-1')
+    await store.load('event-1')
+
+    store.assign('sound-1', 'alex')
+    await settle()
+    await store.load('event-1')
+
+    expect(repository.loadBoard).toHaveBeenCalledTimes(2)
+  })
 })
 
 const board: AssignmentBoard = {
@@ -191,7 +235,7 @@ class ControlledAssignmentRepository implements AssignmentRepository {
   readonly assignCalls: AssignVolunteerCommand[] = []
   readonly assignRequests: Array<Deferred<AssignVolunteerResult>> = []
 
-  readonly loadBoard = () => this.loadRequest.promise
+  readonly loadBoard = vi.fn(() => this.loadRequest.promise)
 
   readonly assign = (command: AssignVolunteerCommand) => {
     this.assignCalls.push(command)
@@ -235,4 +279,11 @@ function ready(store: AssignmentStore) {
 async function settle() {
   await Promise.resolve()
   await Promise.resolve()
+}
+
+function staticRepository() {
+  return {
+    loadBoard: vi.fn().mockResolvedValue(board),
+    assign: vi.fn().mockRejectedValue(new Error('Not configured.')),
+  } satisfies AssignmentRepository
 }

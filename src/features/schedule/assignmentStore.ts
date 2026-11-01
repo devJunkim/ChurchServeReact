@@ -4,6 +4,7 @@ import type {
   MinistryPosition,
   Volunteer,
 } from './assignment'
+import { RequestCache } from '../../core/data/requestCache'
 import {
   AssignmentConflictError,
   type AssignmentRepository,
@@ -55,19 +56,26 @@ export class AssignmentStore {
   private readonly repository: AssignmentRepository
   private readonly onBoardChanged: BoardChanged
   private readonly idFactory: AssignmentIdFactory
+  private readonly boardCache: RequestCache<string, AssignmentBoard>
   private snapshot: AssignmentSnapshot = idleSnapshot
   private readonly listeners = new Set<Listener>()
-  private activeLoad?: AbortController
+  private activeLoad?: { readonly eventId: string; readonly promise: Promise<void> }
   private generation = 0
 
   constructor(
     repository: AssignmentRepository,
     onBoardChanged: BoardChanged = () => undefined,
     idFactory: AssignmentIdFactory = createRequestId,
+    now: () => number = Date.now,
   ) {
     this.repository = repository
     this.onBoardChanged = onBoardChanged
     this.idFactory = idFactory
+    this.boardCache = new RequestCache({
+      maxAgeMs: 15_000,
+      maxEntries: 10,
+      now,
+    })
   }
 
   readonly subscribe = (listener: Listener) => {
@@ -78,40 +86,41 @@ export class AssignmentStore {
   readonly getSnapshot = () => this.snapshot
 
   async load(eventId: string, force = false) {
-    if (
-      !force &&
-      this.snapshot.status === 'ready' &&
-      this.snapshot.eventId === eventId
-    ) {
-      return
-    }
-
-    this.activeLoad?.abort()
-    const controller = new AbortController()
-    const generation = ++this.generation
-    this.activeLoad = controller
-    this.setSnapshot({ status: 'loading', eventId })
-
-    try {
-      const board = await this.repository.loadBoard(eventId, controller.signal)
-      if (controller.signal.aborted || generation !== this.generation) return
-      this.applyBoard(board)
-    } catch (error) {
-      if (
-        controller.signal.aborted ||
-        generation !== this.generation ||
-        isAbortError(error)
-      ) {
+    if (!force) {
+      const cached = this.boardCache.read(eventId)
+      if (cached.hit) {
+        this.applyBoard(cached.value, undefined, false)
         return
       }
-      this.setSnapshot({
-        status: 'error',
-        eventId,
-        message: 'The assignment board did not load. Try again.',
-      })
-    } finally {
-      if (this.activeLoad === controller) this.activeLoad = undefined
+      if (this.activeLoad?.eventId === eventId) {
+        return this.activeLoad.promise
+      }
     }
+
+    const generation = ++this.generation
+    this.setSnapshot({ status: 'loading', eventId })
+    const promise = this.boardCache
+      .getOrLoad(
+        eventId,
+        (signal) => this.repository.loadBoard(eventId, signal),
+        force,
+      )
+      .then((board) => {
+        if (generation === this.generation) this.applyBoard(board)
+      })
+      .catch((error: unknown) => {
+        if (generation !== this.generation || isAbortError(error)) return
+        this.setSnapshot({
+          status: 'error',
+          eventId,
+          message: 'The assignment board did not load. Try again.',
+        })
+      })
+      .finally(() => {
+        if (this.activeLoad?.promise === promise) this.activeLoad = undefined
+      })
+    this.activeLoad = { eventId, promise }
+    return promise
   }
 
   retry() {
@@ -145,6 +154,7 @@ export class AssignmentStore {
     }
     const generation = this.generation
 
+    this.boardCache.invalidate(current.eventId)
     this.setSnapshot({
       ...current,
       assignments: [...current.assignments, pending],
@@ -185,6 +195,7 @@ export class AssignmentStore {
             message: `${volunteer.displayName} was assigned.`,
           },
         })
+        this.cacheCurrentBoard()
         this.notifySchedule()
       })
       .catch((error: unknown) => {
@@ -224,15 +235,41 @@ export class AssignmentStore {
   }
 
   dispose() {
-    this.activeLoad?.abort()
+    this.clear()
+  }
+
+  clear() {
+    this.boardCache.clear()
     this.activeLoad = undefined
     this.generation++
     this.setSnapshot(idleSnapshot)
   }
 
-  private applyBoard(board: AssignmentBoard, notice?: AssignmentNotice) {
+  private applyBoard(
+    board: AssignmentBoard,
+    notice?: AssignmentNotice,
+    retain = true,
+  ) {
     this.setSnapshot({ status: 'ready', ...board, notice })
+    if (retain) this.boardCache.set(board.eventId, board)
     this.notifySchedule()
+  }
+
+  private cacheCurrentBoard() {
+    if (
+      this.snapshot.status !== 'ready' ||
+      this.snapshot.assignments.some((item) => item.syncStatus === 'pending')
+    ) {
+      return
+    }
+    this.boardCache.set(this.snapshot.eventId, {
+      eventId: this.snapshot.eventId,
+      eventVersion: this.snapshot.eventVersion,
+      assignedPositions: this.snapshot.assignedPositions,
+      positions: this.snapshot.positions,
+      volunteers: this.snapshot.volunteers,
+      assignments: this.snapshot.assignments,
+    })
   }
 
   private notifySchedule() {

@@ -26,6 +26,7 @@ describe('ScheduleStore', () => {
     const firstLoad = store.load()
     const duplicateLoad = store.load()
 
+    await Promise.resolve()
     expect(list).toHaveBeenCalledOnce()
     pending.resolve(seededServiceEvents)
     await Promise.all([firstLoad, duplicateLoad])
@@ -43,6 +44,7 @@ describe('ScheduleStore', () => {
     const store = new ScheduleStore(createRepository({ list }))
 
     const firstLoad = store.load()
+    await Promise.resolve()
     const secondLoad = store.load(true)
     first.resolve([{ ...seededServiceEvents[0], id: 'obsolete' }])
     second.resolve([{ ...seededServiceEvents[0], id: 'current' }])
@@ -80,6 +82,30 @@ describe('ScheduleStore', () => {
     expect(findById).not.toHaveBeenCalled()
   })
 
+  it('refreshes list and detail values only after their separate TTLs', async () => {
+    let now = 0
+    const list = vi.fn().mockResolvedValue(seededServiceEvents)
+    const findById = vi.fn().mockResolvedValue(seededServiceEvents[0])
+    const store = new ScheduleStore(
+      createRepository({ list, findById }),
+      () => now,
+    )
+
+    await store.load()
+    await store.findById('not-listed')
+    now = 30_000
+    await store.load()
+    now = 30_001
+    await store.load()
+    now = 60_000
+    await store.findById('not-listed')
+    now = 60_002
+    await store.findById('not-listed')
+
+    expect(list).toHaveBeenCalledTimes(2)
+    expect(findById).toHaveBeenCalledTimes(2)
+  })
+
   it('caches the confirmed result of creation for detail navigation', async () => {
     const createdEvent = { ...seededServiceEvents[0], id: 'created-event' }
     const create = vi.fn().mockResolvedValue(createdEvent)
@@ -100,6 +126,44 @@ describe('ScheduleStore', () => {
     expect(findById).not.toHaveBeenCalled()
   })
 
+  it('invalidates the retained list after event creation', async () => {
+    const createdEvent = { ...seededServiceEvents[0], id: 'created-event' }
+    const list = vi.fn().mockResolvedValue(seededServiceEvents)
+    const create = vi.fn().mockResolvedValue(createdEvent)
+    const store = new ScheduleStore(createRepository({ list, create }))
+
+    await store.load()
+    await store.create({
+      title: createdEvent.title,
+      startsAt: createdEvent.startsAt,
+      endsAt: createdEvent.endsAt,
+      location: createdEvent.location,
+    })
+    await store.load()
+
+    expect(list).toHaveBeenCalledTimes(2)
+  })
+
+  it('synchronizes confirmed staffing in visible and retained event data', async () => {
+    const findById = vi.fn().mockResolvedValue(undefined)
+    const store = new ScheduleStore(createRepository({ findById }))
+    await store.load()
+
+    store.updateStaffing('sunday-2026-11-01', 8, 2)
+    await store.load()
+    const event = await store.findById('sunday-2026-11-01')
+
+    const snapshot = store.getSnapshot()
+    expect(snapshot.status).toBe('ready')
+    expect(
+      snapshot.status === 'ready'
+        ? snapshot.events.find((item) => item.id === 'sunday-2026-11-01')
+        : undefined,
+    ).toMatchObject({ assignedPositions: 8, version: 2 })
+    expect(event).toMatchObject({ assignedPositions: 8, version: 2 })
+    expect(findById).not.toHaveBeenCalled()
+  })
+
   it('aborts active work and clears state when the feature scope is disposed', async () => {
     let requestSignal: AbortSignal | undefined
     const list: ServiceEventRepository['list'] = (signal) => {
@@ -113,6 +177,7 @@ describe('ScheduleStore', () => {
     const store = new ScheduleStore(createRepository({ list }))
 
     const load = store.load()
+    await Promise.resolve()
     store.dispose()
     await load
 
