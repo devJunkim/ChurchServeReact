@@ -12,12 +12,15 @@ namespace ChurchServe.Api.Tests;
 public sealed class ChurchServeApiFactory : WebApplicationFactory<Program>
 {
     private readonly string _role;
+    private readonly string _environment;
 
     public ChurchServeApiFactory(
         string? databasePath = null,
-        string role = "scheduler")
+        string role = "scheduler",
+        string environment = "Testing")
     {
         _role = role;
+        _environment = environment;
         DatabasePath = databasePath ?? Path.Combine(
             Path.GetTempPath(),
             $"churchserve-api-tests-{Guid.NewGuid():N}.db");
@@ -27,7 +30,7 @@ public sealed class ChurchServeApiFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseEnvironment("Testing");
+        builder.UseEnvironment(_environment);
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<DbContextOptions<ChurchServeDbContext>>();

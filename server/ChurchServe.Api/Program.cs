@@ -2,6 +2,7 @@ using ChurchServe.Api.Assignments;
 using ChurchServe.Api.Authentication;
 using ChurchServe.Api.Data;
 using ChurchServe.Api.ServiceEvents;
+using ChurchServe.Api.Testing;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
@@ -68,6 +69,11 @@ await DatabaseInitializer.InitializeAsync(app.Services);
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapSessionEndpoints();
+
+if (app.Environment.IsEnvironment("Testing"))
+{
+    app.MapTestFixtureEndpoints();
+}
 
 var serviceEvents = app.MapGroup("/api/service-events")
     .RequireAuthorization();

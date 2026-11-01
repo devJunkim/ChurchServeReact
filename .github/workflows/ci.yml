@@ -42,3 +42,20 @@ jobs:
 
       - name: Check EF Core model drift
         run: dotnet ef migrations has-pending-model-changes --project server/ChurchServe.Api
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run critical browser journeys
+        run: npm run test:e2e
+
+      - name: Upload browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7

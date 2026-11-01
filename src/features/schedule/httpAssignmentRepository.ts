@@ -29,7 +29,7 @@ export class HttpAssignmentRepository implements AssignmentRepository {
 
   constructor(
     baseUrl = '/api/service-events',
-    fetcher: Fetch = globalThis.fetch,
+    fetcher: Fetch = globalThis.fetch.bind(globalThis),
     cookieSource: CookieSource = browserCookieSource,
   ) {
     this.baseUrl = baseUrl.replace(/\/$/, '')
