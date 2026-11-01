@@ -2,6 +2,8 @@ import { Link, useLoaderData } from 'react-router'
 import type { ServiceEvent } from './serviceEvent'
 import { AssignmentBoardPanel } from './AssignmentBoardPanel'
 import './schedule.css'
+import { hasPermission, PERMISSIONS } from '../../core/auth/session'
+import { useSession } from '../../core/auth/sessionContext'
 
 const detailDateFormatter = new Intl.DateTimeFormat('en-CA', {
   dateStyle: 'full',
@@ -11,6 +13,10 @@ const detailDateFormatter = new Intl.DateTimeFormat('en-CA', {
 
 export function ServiceEventDetailPage() {
   const event = useLoaderData() as ServiceEvent
+  const { state: session } = useSession()
+  const canManageSchedule =
+    session.status === 'authenticated' &&
+    hasPermission(session.user, PERMISSIONS.scheduleManage)
 
   const openPositions = Math.max(
     0,
@@ -52,7 +58,10 @@ export function ServiceEventDetailPage() {
         </div>
       </dl>
 
-      <AssignmentBoardPanel event={event} />
+      <AssignmentBoardPanel
+        event={event}
+        canManageSchedule={canManageSchedule}
+      />
     </section>
   )
 }

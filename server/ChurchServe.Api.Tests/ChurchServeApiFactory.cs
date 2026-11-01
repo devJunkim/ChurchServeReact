@@ -11,8 +11,13 @@ namespace ChurchServe.Api.Tests;
 
 public sealed class ChurchServeApiFactory : WebApplicationFactory<Program>
 {
-    public ChurchServeApiFactory(string? databasePath = null)
+    private readonly string _role;
+
+    public ChurchServeApiFactory(
+        string? databasePath = null,
+        string role = "scheduler")
     {
+        _role = role;
         DatabasePath = databasePath ?? Path.Combine(
             Path.GetTempPath(),
             $"churchserve-api-tests-{Guid.NewGuid():N}.db");
@@ -37,7 +42,7 @@ public sealed class ChurchServeApiFactory : WebApplicationFactory<Program>
                 options.Email = AuthenticationTestExtensions.Email;
                 options.DisplayName = "Test Coordinator";
                 options.Password = AuthenticationTestExtensions.Password;
-                options.Role = "scheduler";
+                options.Role = _role;
             });
         });
     }

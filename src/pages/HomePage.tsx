@@ -1,6 +1,10 @@
 import { Link } from 'react-router'
+import { hasPermission, PERMISSIONS } from '../core/auth/session'
+import { useSession } from '../core/auth/sessionContext'
 
 export function HomePage() {
+  const { state } = useSession()
+  const user = state.status === 'authenticated' ? state.user : undefined
   return (
     <section className="hero">
       <div className="hero-copy">
@@ -12,12 +16,16 @@ export function HomePage() {
         </p>
 
         <div className="actions">
-          <Link className="primary-action" to="/schedule">
-            View the schedule
-          </Link>
-          <Link className="secondary-action" to="/volunteers">
-            View volunteers
-          </Link>
+          {hasPermission(user, PERMISSIONS.scheduleRead) && (
+            <Link className="primary-action" to="/schedule">
+              View the schedule
+            </Link>
+          )}
+          {hasPermission(user, PERMISSIONS.volunteerRead) && (
+            <Link className="secondary-action" to="/volunteers">
+              View volunteers
+            </Link>
+          )}
         </div>
       </div>
 

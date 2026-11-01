@@ -3,7 +3,11 @@ import {
   readAntiforgeryToken,
   type CookieSource,
 } from './antiforgery'
-import type { CurrentUser, SignInCommand } from './session'
+import {
+  isPermission,
+  type CurrentUser,
+  type SignInCommand,
+} from './session'
 import type { SessionClient } from './sessionClient'
 import {
   normalizeNetworkError,
@@ -105,7 +109,9 @@ function parseCurrentUser(value: unknown): CurrentUser {
     !isNonEmptyString(value.email) ||
     !isNonEmptyString(value.displayName) ||
     !Array.isArray(value.roles) ||
-    !value.roles.every(isNonEmptyString)
+    !value.roles.every(isNonEmptyString) ||
+    !Array.isArray(value.permissions) ||
+    !value.permissions.every(isPermission)
   ) {
     throw new InvalidSessionResponseError()
   }
@@ -115,6 +121,7 @@ function parseCurrentUser(value: unknown): CurrentUser {
     email: value.email,
     displayName: value.displayName,
     roles: [...value.roles],
+    permissions: [...value.permissions],
   }
 }
 

@@ -6,10 +6,16 @@ import {
   useScheduleStore,
 } from './scheduleStoreContext'
 import './schedule.css'
+import { hasPermission, PERMISSIONS } from '../../core/auth/session'
+import { useSession } from '../../core/auth/sessionContext'
 
 export function SchedulePage() {
   const store = useScheduleStore()
   const state = useScheduleSnapshot()
+  const { state: session } = useSession()
+  const canManageSchedule =
+    session.status === 'authenticated' &&
+    hasPermission(session.user, PERMISSIONS.scheduleManage)
 
   useEffect(() => {
     void store.load()
@@ -58,11 +64,13 @@ export function SchedulePage() {
             </p>
           </section>
 
-          <div className="schedule-actions">
-            <Link className="primary-link" to="/schedule/new">
-              Create service
-            </Link>
-          </div>
+          {canManageSchedule && (
+            <div className="schedule-actions">
+              <Link className="primary-link" to="/schedule/new">
+                Create service
+              </Link>
+            </div>
+          )}
 
           {state.events.length === 0 ? (
             <section className="state-panel empty-state">

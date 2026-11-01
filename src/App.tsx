@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router'
 import { SessionProvider } from './core/auth/SessionProvider'
 import { useSession } from './core/auth/sessionContext'
 import type { SessionClient } from './core/auth/sessionClient'
+import { hasPermission, PERMISSIONS } from './core/auth/session'
 import './styles/app.css'
 
 function navLinkClassName({ isActive }: { isActive: boolean }) {
@@ -57,12 +58,16 @@ function AppShell() {
             {state.status === 'authenticated' ? (
               <>
                 <nav aria-label="Primary navigation">
-                  <NavLink className={navLinkClassName} to="/schedule">
-                    Schedule
-                  </NavLink>
-                  <NavLink className={navLinkClassName} to="/volunteers">
-                    Volunteers
-                  </NavLink>
+                  {hasPermission(state.user, PERMISSIONS.scheduleRead) && (
+                    <NavLink className={navLinkClassName} to="/schedule">
+                      Schedule
+                    </NavLink>
+                  )}
+                  {hasPermission(state.user, PERMISSIONS.volunteerRead) && (
+                    <NavLink className={navLinkClassName} to="/volunteers">
+                      Volunteers
+                    </NavLink>
+                  )}
                 </nav>
                 <span className="current-user">{state.user.displayName}</span>
                 <button

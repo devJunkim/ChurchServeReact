@@ -15,6 +15,12 @@ const currentUser: CurrentUser = {
   email: 'coordinator@churchserve.local',
   displayName: 'Demo Coordinator',
   roles: ['scheduler'],
+  permissions: [
+    'schedule.read',
+    'schedule.manage',
+    'volunteer.read',
+    'volunteer.manage',
+  ],
 }
 
 describe('routed schedule workflow', () => {

@@ -7,6 +7,7 @@ import { ScheduleStoreProvider } from './ScheduleStoreProvider'
 import { InMemoryServiceEventRepository } from './inMemoryServiceEventRepository'
 import { ScheduleStore } from './scheduleStore'
 import type { ServiceEventRepository } from './serviceEventRepository'
+import { TestingSessionProvider } from '../../testing/TestingSessionProvider'
 
 function renderSchedule(
   repository: ServiceEventRepository = new InMemoryServiceEventRepository(),
@@ -14,9 +15,11 @@ function renderSchedule(
   const store = new ScheduleStore(repository)
   render(
     <MemoryRouter>
-      <ScheduleStoreProvider store={store}>
-        <SchedulePage />
-      </ScheduleStoreProvider>
+      <TestingSessionProvider>
+        <ScheduleStoreProvider store={store}>
+          <SchedulePage />
+        </ScheduleStoreProvider>
+      </TestingSessionProvider>
     </MemoryRouter>,
   )
 }

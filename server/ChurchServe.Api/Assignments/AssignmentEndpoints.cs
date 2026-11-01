@@ -20,7 +20,9 @@ public static class AssignmentEndpoints
                 eventId,
                 cancellationToken);
             return board is null ? Results.NotFound() : Results.Ok(board);
-        });
+        }).RequireAuthorization(
+            ChurchServePermissions.ScheduleRead,
+            ChurchServePermissions.VolunteerRead);
 
         group.MapPost("/{eventId}/assignments", async (
             string eventId,
@@ -179,7 +181,9 @@ public static class AssignmentEndpoints
                     ToResponse(assignment),
                     serviceEvent.Version,
                     serviceEvent.AssignedPositions));
-        }).ValidateAntiforgery();
+        }).ValidateAntiforgery().RequireAuthorization(
+            ChurchServePermissions.ScheduleManage,
+            ChurchServePermissions.VolunteerRead);
 
         return group;
     }

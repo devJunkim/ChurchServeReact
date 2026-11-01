@@ -6,4 +6,5 @@ public sealed record SessionUserResponse(
     string Id,
     string Email,
     string DisplayName,
-    IReadOnlyList<string> Roles);
+    IReadOnlyList<string> Roles,
+    IReadOnlyList<string> Permissions);

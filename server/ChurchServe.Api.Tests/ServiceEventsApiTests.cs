@@ -8,6 +8,38 @@ namespace ChurchServe.Api.Tests;
 public sealed class ServiceEventsApiTests
 {
     [Fact]
+    public async Task Reader_can_view_but_cannot_create_service_events()
+    {
+        var factory = new ChurchServeApiFactory(role: "reader");
+        try
+        {
+            using var client = factory.CreateClient();
+            var cancellationToken = TestContext.Current.CancellationToken;
+            await client.SignInAsync(cancellationToken);
+
+            var listResponse = await client.GetAsync(
+                "/api/service-events",
+                cancellationToken);
+            var createResponse = await client.PostAsJsonAsync(
+                "/api/service-events",
+                new CreateServiceEventRequest(
+                    "Unauthorized change",
+                    DateTimeOffset.Parse("2026-12-24T18:00:00-05:00"),
+                    DateTimeOffset.Parse("2026-12-24T19:30:00-05:00"),
+                    "Room"),
+                cancellationToken);
+
+            Assert.Equal(HttpStatusCode.OK, listResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.Forbidden, createResponse.StatusCode);
+        }
+        finally
+        {
+            factory.Dispose();
+            factory.DeleteDatabaseFiles();
+        }
+    }
+
+    [Fact]
     public Task List_returns_seeded_events_in_start_order() =>
         WithApiAsync(async client =>
         {
