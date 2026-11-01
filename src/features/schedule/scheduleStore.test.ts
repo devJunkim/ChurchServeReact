@@ -164,6 +164,29 @@ describe('ScheduleStore', () => {
     expect(findById).not.toHaveBeenCalled()
   })
 
+  it('preserves unchanged event objects across a forced refresh', async () => {
+    const initial = seededServiceEvents.map((event) => ({ ...event }))
+    const changed = initial.map((event, index) =>
+      index === 1
+        ? { ...event, assignedPositions: event.assignedPositions + 1, version: 2 }
+        : { ...event },
+    )
+    const list = vi
+      .fn()
+      .mockResolvedValueOnce(initial)
+      .mockResolvedValueOnce(changed)
+    const store = new ScheduleStore(createRepository({ list }))
+
+    await store.load()
+    const before = readyEvents(store)
+    await store.load(true)
+    const after = readyEvents(store)
+
+    expect(after).not.toBe(before)
+    expect(after[0]).toBe(before[0])
+    expect(after[1]).toBe(changed[1])
+  })
+
   it('aborts active work and clears state when the feature scope is disposed', async () => {
     let requestSignal: AbortSignal | undefined
     const list: ServiceEventRepository['list'] = (signal) => {
@@ -185,6 +208,12 @@ describe('ScheduleStore', () => {
     expect(store.getSnapshot()).toEqual({ status: 'idle' })
   })
 })
+
+function readyEvents(store: ScheduleStore) {
+  const snapshot = store.getSnapshot()
+  if (snapshot.status !== 'ready') throw new Error('Expected a ready schedule.')
+  return snapshot.events
+}
 
 function createRepository(
   overrides: Partial<ServiceEventRepository> = {},

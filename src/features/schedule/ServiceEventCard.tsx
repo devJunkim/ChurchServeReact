@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Link } from 'react-router'
 import type { ServiceEvent } from './serviceEvent'
 
@@ -11,7 +12,9 @@ const serviceDateFormatter = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'America/Toronto',
 })
 
-export function ServiceEventCard({ event }: ServiceEventCardProps) {
+export const ServiceEventCard = memo(function ServiceEventCard({
+  event,
+}: ServiceEventCardProps) {
   const openPositions = Math.max(
     0,
     event.requiredPositions - event.assignedPositions,
@@ -48,4 +51,4 @@ export function ServiceEventCard({ event }: ServiceEventCardProps) {
       </Link>
     </article>
   )
-}
+})

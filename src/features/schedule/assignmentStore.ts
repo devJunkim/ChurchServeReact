@@ -51,6 +51,7 @@ type BoardChanged = (
 
 const idleSnapshot: AssignmentIdleSnapshot = { status: 'idle' }
 const createRequestId: AssignmentIdFactory = () => crypto.randomUUID()
+const noVolunteers: readonly Volunteer[] = []
 
 export class AssignmentStore {
   private readonly repository: AssignmentRepository
@@ -61,6 +62,10 @@ export class AssignmentStore {
   private readonly listeners = new Set<Listener>()
   private activeLoad?: { readonly eventId: string; readonly promise: Promise<void> }
   private generation = 0
+  private indexedAssignments?: readonly Assignment[]
+  private assignmentsByPosition = new Map<string, Assignment>()
+  private indexedVolunteers?: readonly Volunteer[]
+  private volunteersByMinistry = new Map<string, readonly Volunteer[]>()
 
   constructor(
     repository: AssignmentRepository,
@@ -227,11 +232,34 @@ export class AssignmentStore {
     return validation
   }
 
+  assignmentFor(positionId: string): Assignment | undefined {
+    if (this.snapshot.status !== 'ready') return undefined
+    if (this.indexedAssignments !== this.snapshot.assignments) {
+      this.indexedAssignments = this.snapshot.assignments
+      this.assignmentsByPosition = new Map(
+        this.snapshot.assignments
+          .filter((assignment) => assignment.status !== 'declined')
+          .map((assignment) => [assignment.positionId, assignment]),
+      )
+    }
+    return this.assignmentsByPosition.get(positionId)
+  }
+
   volunteersFor(position: MinistryPosition): readonly Volunteer[] {
-    if (this.snapshot.status !== 'ready') return []
-    return this.snapshot.volunteers.filter((volunteer) =>
-      volunteer.eligibleMinistries.includes(position.ministry),
-    )
+    if (this.snapshot.status !== 'ready') return noVolunteers
+    if (this.indexedVolunteers !== this.snapshot.volunteers) {
+      this.indexedVolunteers = this.snapshot.volunteers
+      const grouped = new Map<string, Volunteer[]>()
+      for (const volunteer of this.snapshot.volunteers) {
+        for (const ministry of volunteer.eligibleMinistries) {
+          const eligible = grouped.get(ministry) ?? []
+          eligible.push(volunteer)
+          grouped.set(ministry, eligible)
+        }
+      }
+      this.volunteersByMinistry = grouped
+    }
+    return this.volunteersByMinistry.get(position.ministry) ?? noVolunteers
   }
 
   dispose() {
@@ -242,6 +270,10 @@ export class AssignmentStore {
     this.boardCache.clear()
     this.activeLoad = undefined
     this.generation++
+    this.indexedAssignments = undefined
+    this.assignmentsByPosition.clear()
+    this.indexedVolunteers = undefined
+    this.volunteersByMinistry.clear()
     this.setSnapshot(idleSnapshot)
   }
 

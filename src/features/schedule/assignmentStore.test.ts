@@ -35,6 +35,29 @@ describe('AssignmentStore', () => {
     expect(boardChanged).toHaveBeenCalledWith('event-1', 7, 1)
   })
 
+  it('reuses indexed assignment and volunteer lookups', async () => {
+    const repository = staticRepository({
+      ...board,
+      assignments: [
+        confirmedAssignment('accepted', 'sound-1'),
+        {
+          ...confirmedAssignment('declined', 'camera-1'),
+          status: 'declined',
+        },
+      ],
+    })
+    const store = new AssignmentStore(repository)
+    await store.load('event-1')
+
+    const firstVolunteers = store.volunteersFor(board.positions[0])
+    const secondVolunteers = store.volunteersFor(board.positions[1])
+
+    expect(store.assignmentFor('sound-1')?.id).toBe('accepted')
+    expect(store.assignmentFor('camera-1')).toBeUndefined()
+    expect(firstVolunteers).toBe(secondVolunteers)
+    expect(firstVolunteers).toEqual([board.volunteers[0]])
+  })
+
   it('adds a pending assignment and confirms only the matching request', async () => {
     const repository = new ControlledAssignmentRepository()
     const store = new AssignmentStore(repository, undefined, () => 'request-1')
@@ -281,9 +304,9 @@ async function settle() {
   await Promise.resolve()
 }
 
-function staticRepository() {
+function staticRepository(boardValue: AssignmentBoard = board) {
   return {
-    loadBoard: vi.fn().mockResolvedValue(board),
+    loadBoard: vi.fn().mockResolvedValue(boardValue),
     assign: vi.fn().mockRejectedValue(new Error('Not configured.')),
   } satisfies AssignmentRepository
 }
