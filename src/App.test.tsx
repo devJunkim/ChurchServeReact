@@ -15,6 +15,12 @@ const currentUser: CurrentUser = {
   email: 'coordinator@churchserve.local',
   displayName: 'Demo Coordinator',
   roles: ['scheduler'],
+  permissions: [
+    'schedule.read',
+    'schedule.manage',
+    'volunteer.read',
+    'volunteer.manage',
+  ],
 }
 
 function createAuthenticatedSessionClient(): SessionClient {
@@ -47,6 +53,50 @@ function renderRoute(
 afterEach(() => vi.restoreAllMocks())
 
 describe('ChurchServe application shell', () => {
+  it('hides unavailable actions and denies a reader the create deep link', async () => {
+    const reader: CurrentUser = {
+      ...currentUser,
+      roles: ['reader'],
+      permissions: ['schedule.read', 'volunteer.read'],
+    }
+    const sessionClient: SessionClient = {
+      restore: vi.fn().mockResolvedValue(reader),
+      signIn: vi.fn().mockResolvedValue(reader),
+      signOut: vi.fn().mockResolvedValue(undefined),
+    }
+
+    const router = renderRoute('/schedule', sessionClient)
+
+    expect(
+      await screen.findByRole('heading', { name: 'Upcoming services' }),
+    ).toBeVisible()
+    expect(screen.queryByRole('link', { name: 'Create service' })).not.toBeInTheDocument()
+
+    await router.navigate('/schedule/new')
+    expect(
+      await screen.findByRole('heading', {
+        name: 'This feature is not available to your account.',
+      }),
+    ).toBeVisible()
+  })
+
+  it('omits navigation that is not granted by the session', async () => {
+    const scheduleOnly: CurrentUser = {
+      ...currentUser,
+      permissions: ['schedule.read'],
+    }
+    renderRoute('/', {
+      restore: vi.fn().mockResolvedValue(scheduleOnly),
+      signIn: vi.fn().mockResolvedValue(scheduleOnly),
+      signOut: vi.fn().mockResolvedValue(undefined),
+    })
+
+    await screen.findByText('Demo Coordinator')
+    expect(screen.getByRole('link', { name: 'Schedule' })).toBeVisible()
+    expect(screen.queryByRole('link', { name: 'Volunteers' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'View volunteers' })).not.toBeInTheDocument()
+  })
+
   it('renders the authenticated navigation and home introduction', async () => {
     renderRoute()
 

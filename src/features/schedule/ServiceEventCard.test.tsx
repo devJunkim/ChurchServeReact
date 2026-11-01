@@ -48,4 +48,17 @@ describe('ServiceEventCard', () => {
     expect(screen.getByText('Fully staffed')).toBeVisible()
     expect(screen.queryByText(/open positions/)).not.toBeInTheDocument()
   })
+
+  it('renders hostile-looking values as text rather than markup', () => {
+    renderCard({
+      ...event,
+      title: '<img src=x onerror=alert(1)>',
+      location: '<script>alert(1)</script>',
+    })
+
+    expect(document.querySelector('.event-card img')).toBeNull()
+    expect(document.querySelector('.event-card script')).toBeNull()
+    expect(screen.getByText('<img src=x onerror=alert(1)>')).toBeVisible()
+    expect(screen.getByText('<script>alert(1)</script>')).toBeVisible()
+  })
 })

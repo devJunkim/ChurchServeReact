@@ -4,8 +4,14 @@ import { HttpSessionClient } from './core/auth/httpSessionClient'
 import { RequireAuthenticatedSession } from './core/auth/RequireAuthenticatedSession'
 import type { SessionClient } from './core/auth/sessionClient'
 import { SignInPage } from './core/auth/SignInPage'
+import {
+  RequireScheduleManage,
+  RequireScheduleRead,
+  RequireVolunteerRead,
+} from './core/auth/PermissionGates'
 import { HomePage } from './pages/HomePage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { UnavailablePage } from './pages/UnavailablePage'
 import type {
   ScheduleFeatureLoader,
   VolunteerFeatureLoader,
@@ -50,34 +56,50 @@ export function createAppRoutes({
       children: [
         { index: true, Component: HomePage },
         { path: 'sign-in', Component: SignInPage },
+        { path: 'unavailable', Component: UnavailablePage },
         {
           Component: RequireAuthenticatedSession,
           children: [
             {
-              lazy: async () => ({ Component: (await schedule()).Layout }),
-              HydrateFallback: RouteLoadingPage,
+              Component: RequireScheduleRead,
               children: [
                 {
-                  path: 'schedule',
-                  lazy: async () => (await schedule()).list,
+                  lazy: async () => ({ Component: (await schedule()).Layout }),
                   HydrateFallback: RouteLoadingPage,
-                },
-                {
-                  path: 'schedule/new',
-                  lazy: async () => (await schedule()).create,
-                  HydrateFallback: RouteLoadingPage,
-                },
-                {
-                  path: 'schedule/:eventId',
-                  lazy: async () => (await schedule()).detail,
-                  HydrateFallback: RouteLoadingPage,
+                  children: [
+                    {
+                      path: 'schedule',
+                      lazy: async () => (await schedule()).list,
+                      HydrateFallback: RouteLoadingPage,
+                    },
+                    {
+                      Component: RequireScheduleManage,
+                      children: [
+                        {
+                          path: 'schedule/new',
+                          lazy: async () => (await schedule()).create,
+                          HydrateFallback: RouteLoadingPage,
+                        },
+                      ],
+                    },
+                    {
+                      path: 'schedule/:eventId',
+                      lazy: async () => (await schedule()).detail,
+                      HydrateFallback: RouteLoadingPage,
+                    },
+                  ],
                 },
               ],
             },
             {
-              path: 'volunteers',
-              lazy: volunteers,
-              HydrateFallback: RouteLoadingPage,
+              Component: RequireVolunteerRead,
+              children: [
+                {
+                  path: 'volunteers',
+                  lazy: volunteers,
+                  HydrateFallback: RouteLoadingPage,
+                },
+              ],
             },
           ],
         },

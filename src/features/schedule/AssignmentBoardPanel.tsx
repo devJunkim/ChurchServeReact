@@ -13,9 +13,13 @@ const timeFormatter = new Intl.DateTimeFormat('en-CA', {
 
 type AssignmentBoardPanelProps = {
   readonly event: ServiceEvent
+  readonly canManageSchedule: boolean
 }
 
-export function AssignmentBoardPanel({ event }: AssignmentBoardPanelProps) {
+export function AssignmentBoardPanel({
+  event,
+  canManageSchedule,
+}: AssignmentBoardPanelProps) {
   const store = useAssignmentStore()
   const snapshot = useAssignmentSnapshot()
   const [selectedVolunteers, setSelectedVolunteers] = useState<
@@ -117,7 +121,7 @@ export function AssignmentBoardPanel({ event }: AssignmentBoardPanelProps) {
                           : 'Confirmed'}
                       </span>
                     </div>
-                  ) : (
+                  ) : canManageSchedule ? (
                     <div className="assignment-action">
                       <label htmlFor={`volunteer-${position.id}`}>
                         Volunteer
@@ -158,6 +162,8 @@ export function AssignmentBoardPanel({ event }: AssignmentBoardPanelProps) {
                         Assign
                       </button>
                     </div>
+                  ) : (
+                    <p className="assigned-volunteer">Unfilled</p>
                   )}
                 </li>
               )

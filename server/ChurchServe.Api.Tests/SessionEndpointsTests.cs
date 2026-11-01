@@ -84,6 +84,14 @@ public sealed class SessionEndpointsTests
             Assert.Equal("test-coordinator", currentUser.Id);
             Assert.Equal("Test Coordinator", currentUser.DisplayName);
             Assert.Contains("scheduler", currentUser.Roles);
+            Assert.Equal(
+                [
+                    "schedule.manage",
+                    "schedule.read",
+                    "volunteer.manage",
+                    "volunteer.read",
+                ],
+                currentUser.Permissions);
 
             var protectedResponse = await client.GetAsync(
                 "/api/service-events",
@@ -100,6 +108,33 @@ public sealed class SessionEndpointsTests
                 cancellationToken);
             Assert.Equal(HttpStatusCode.Unauthorized, afterSignOut.StatusCode);
         });
+
+    [Fact]
+    public async Task Reader_session_returns_exact_least_privilege_permissions()
+    {
+        var factory = new ChurchServeApiFactory(role: "reader");
+        try
+        {
+            using var client = factory.CreateClient();
+            var cancellationToken = TestContext.Current.CancellationToken;
+            await client.SignInAsync(cancellationToken);
+
+            var currentUser = await client.GetFromJsonAsync<SessionUserResponse>(
+                "/api/session",
+                cancellationToken);
+
+            Assert.NotNull(currentUser);
+            Assert.Equal(["reader"], currentUser.Roles);
+            Assert.Equal(
+                ["schedule.read", "volunteer.read"],
+                currentUser.Permissions);
+        }
+        finally
+        {
+            factory.Dispose();
+            factory.DeleteDatabaseFiles();
+        }
+    }
 
     private static async Task WithApiAsync(Func<HttpClient, Task> assertion)
     {
@@ -121,5 +156,6 @@ public sealed class SessionEndpointsTests
         string Id,
         string Email,
         string DisplayName,
-        IReadOnlyList<string> Roles);
+        IReadOnlyList<string> Roles,
+        IReadOnlyList<string> Permissions);
 }

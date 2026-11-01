@@ -45,13 +45,17 @@ public static class SessionEndpoints
             return Results.Unauthorized();
         }
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, account.Id),
             new Claim(ClaimTypes.Name, account.DisplayName),
             new Claim(ClaimTypes.Email, account.Email),
             new Claim(ClaimTypes.Role, account.Role),
         };
+        claims.AddRange(ChurchServePermissions.ForRole(account.Role)
+            .Select(permission => new Claim(
+                ChurchServePermissions.ClaimType,
+                permission)));
         var principal = new ClaimsPrincipal(
             new ClaimsIdentity(
                 claims,
@@ -104,5 +108,10 @@ public static class SessionEndpoints
             principal.FindFirstValue(ClaimTypes.Name)!,
             principal.FindAll(ClaimTypes.Role)
                 .Select(claim => claim.Value)
+                .ToArray(),
+            principal.FindAll(ChurchServePermissions.ClaimType)
+                .Select(claim => claim.Value)
+                .Distinct(StringComparer.Ordinal)
+                .Order()
                 .ToArray());
 }

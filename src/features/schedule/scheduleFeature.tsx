@@ -16,6 +16,7 @@ import { ServiceEventDetailPage } from './ServiceEventDetailPage'
 import { createServiceEventDetailLoader } from './serviceEventDetailLoader'
 import type { ServiceEventRepository } from './serviceEventRepository'
 import { ScheduleStore } from './scheduleStore'
+import { AuthorizationCacheBoundary } from './AuthorizationCacheBoundary'
 
 export function createScheduleFeature(
   repository: ServiceEventRepository = new HttpServiceEventRepository(),
@@ -32,7 +33,9 @@ export function createScheduleFeature(
     return (
       <ScheduleStoreProvider store={store}>
         <AssignmentStoreProvider store={assignmentStore}>
-          <Outlet />
+          <AuthorizationCacheBoundary>
+            <Outlet />
+          </AuthorizationCacheBoundary>
         </AssignmentStoreProvider>
       </ScheduleStoreProvider>
     )
@@ -49,6 +52,7 @@ export function createScheduleFeature(
     },
   }
 }
+
 
 export function createScheduleFeatureLoader(
   repository: ServiceEventRepository,

@@ -48,7 +48,7 @@ builder.Services
             return Task.CompletedTask;
         };
     });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(ChurchServePermissions.Configure);
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-XSRF-TOKEN";
@@ -85,7 +85,7 @@ serviceEvents.MapGet("", async (
         .ToArrayAsync(cancellationToken);
 
     return Results.Ok(entities.Select(ToResponse).ToArray());
-});
+}).RequireAuthorization(ChurchServePermissions.ScheduleRead);
 
 serviceEvents.MapGet("/{eventId}", async (
     string eventId,
@@ -101,7 +101,7 @@ serviceEvents.MapGet("/{eventId}", async (
     return serviceEvent is null
         ? Results.NotFound()
         : Results.Ok(ToResponse(serviceEvent));
-});
+}).RequireAuthorization(ChurchServePermissions.ScheduleRead);
 
 serviceEvents.MapPost("", async (
     CreateServiceEventRequest request,
@@ -132,7 +132,8 @@ serviceEvents.MapPost("", async (
         $"/api/service-events/{Uri.EscapeDataString(serviceEvent.Id)}",
         ToResponse(serviceEvent));
 })
-.ValidateAntiforgery();
+.ValidateAntiforgery()
+.RequireAuthorization(ChurchServePermissions.ScheduleManage);
 
 app.Run();
 

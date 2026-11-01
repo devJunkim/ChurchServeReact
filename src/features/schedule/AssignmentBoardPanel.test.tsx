@@ -73,6 +73,21 @@ describe('AssignmentBoardPanel', () => {
       'Alex Morgan was assigned.',
     )
   })
+
+  it('keeps assignments readable without rendering management controls', async () => {
+    const repository: AssignmentRepository = {
+      loadBoard: async () => board,
+      assign: async () => {
+        throw new Error('Unexpected assignment.')
+      },
+    }
+
+    renderPanel(repository, false)
+
+    expect(await screen.findByText('Unfilled')).toBeVisible()
+    expect(screen.queryByLabelText('Volunteer')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Assign' })).not.toBeInTheDocument()
+  })
 })
 
 const board: AssignmentBoard = {
@@ -99,11 +114,17 @@ const board: AssignmentBoard = {
   assignments: [],
 }
 
-function renderPanel(repository: AssignmentRepository) {
+function renderPanel(
+  repository: AssignmentRepository,
+  canManageSchedule = true,
+) {
   const store = new AssignmentStore(repository, undefined, () => 'request-1')
   render(
     <AssignmentStoreProvider store={store}>
-      <AssignmentBoardPanel event={buildServiceEvent()} />
+      <AssignmentBoardPanel
+        event={buildServiceEvent()}
+        canManageSchedule={canManageSchedule}
+      />
     </AssignmentStoreProvider>,
   )
 }

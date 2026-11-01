@@ -7,6 +7,57 @@ namespace ChurchServe.Api.Tests;
 public sealed class AssignmentEndpointsTests
 {
     [Fact]
+    public async Task Reader_can_view_the_board_but_cannot_assign_a_volunteer()
+    {
+        var factory = new ChurchServeApiFactory(role: "reader");
+        try
+        {
+            using var client = factory.CreateClient();
+            var cancellationToken = TestContext.Current.CancellationToken;
+            await client.SignInAsync(cancellationToken);
+
+            var boardResponse = await client.GetAsync(
+                "/api/service-events/sunday-2026-11-01/assignment-board",
+                cancellationToken);
+            var assignResponse = await client.PostAsJsonAsync(
+                "/api/service-events/sunday-2026-11-01/assignments",
+                WelcomeRequest(),
+                cancellationToken);
+
+            Assert.Equal(HttpStatusCode.OK, boardResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.Forbidden, assignResponse.StatusCode);
+        }
+        finally
+        {
+            factory.Dispose();
+            factory.DeleteDatabaseFiles();
+        }
+    }
+
+    [Fact]
+    public async Task Unknown_role_cannot_read_the_assignment_board()
+    {
+        var factory = new ChurchServeApiFactory(role: "unsupported");
+        try
+        {
+            using var client = factory.CreateClient();
+            var cancellationToken = TestContext.Current.CancellationToken;
+            await client.SignInAsync(cancellationToken);
+
+            var response = await client.GetAsync(
+                "/api/service-events/sunday-2026-11-01/assignment-board",
+                cancellationToken);
+
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+        finally
+        {
+            factory.Dispose();
+            factory.DeleteDatabaseFiles();
+        }
+    }
+
+    [Fact]
     public Task Board_returns_positions_eligible_volunteers_and_version() =>
         WithApiAsync(async client =>
         {

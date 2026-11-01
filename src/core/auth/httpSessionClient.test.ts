@@ -6,6 +6,12 @@ const currentUser = {
   email: 'coordinator@churchserve.local',
   displayName: 'Demo Coordinator',
   roles: ['scheduler'],
+  permissions: [
+    'schedule.read',
+    'schedule.manage',
+    'volunteer.read',
+    'volunteer.manage',
+  ],
 }
 
 describe('HttpSessionClient', () => {
@@ -53,6 +59,26 @@ describe('HttpSessionClient', () => {
     )
     const client = new HttpSessionClient('/api/session', fetcher)
 
+    await expect(client.restore()).rejects.toMatchObject({
+      name: 'InvalidSessionResponseError',
+    })
+  })
+
+  it('rejects an absent or unknown permission', async () => {
+    const withoutPermissions = { ...currentUser, permissions: undefined }
+    const unknownPermission = {
+      ...currentUser,
+      permissions: [...currentUser.permissions, 'billing.read'],
+    }
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json(withoutPermissions))
+      .mockResolvedValueOnce(Response.json(unknownPermission))
+    const client = new HttpSessionClient('/api/session', fetcher)
+
+    await expect(client.restore()).rejects.toMatchObject({
+      name: 'InvalidSessionResponseError',
+    })
     await expect(client.restore()).rejects.toMatchObject({
       name: 'InvalidSessionResponseError',
     })

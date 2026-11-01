@@ -15,6 +15,7 @@ import { createServiceEventDetailLoader } from './serviceEventDetailLoader'
 import type { ServiceEventRepository } from './serviceEventRepository'
 import { seededServiceEvents } from './seededServiceEvents'
 import { AppProblemError } from '../../core/http/appProblem'
+import { TestingSessionProvider } from '../../testing/TestingSessionProvider'
 
 describe('service event request states', () => {
   it('retries a failed detail loader', async () => {
@@ -158,11 +159,13 @@ function renderRoute(path: string, repository: ServiceEventRepository) {
       {
         path: '/',
         element: (
-          <ScheduleStoreProvider store={store}>
-            <AssignmentStoreProvider store={assignmentStore}>
-              <Outlet />
-            </AssignmentStoreProvider>
-          </ScheduleStoreProvider>
+          <TestingSessionProvider>
+            <ScheduleStoreProvider store={store}>
+              <AssignmentStoreProvider store={assignmentStore}>
+                <Outlet />
+              </AssignmentStoreProvider>
+            </ScheduleStoreProvider>
+          </TestingSessionProvider>
         ),
         children: [
           {
