@@ -1,6 +1,10 @@
 import { createBrowserRouter, type RouteObject } from 'react-router'
 import { App } from './App'
 import { HttpSessionClient } from './core/auth/httpSessionClient'
+import {
+  appendApiPath,
+  type RuntimeConfig,
+} from './core/config/runtimeConfig'
 import { RequireAuthenticatedSession } from './core/auth/RequireAuthenticatedSession'
 import type { SessionClient } from './core/auth/sessionClient'
 import { SignInPage } from './core/auth/SignInPage'
@@ -21,13 +25,9 @@ import { AppErrorPage } from './shared/ui/AppErrorPage'
 
 type AppRouteDependencies = {
   sessionClient: SessionClient
+  apiBaseUrl?: string
   loadScheduleFeature?: ScheduleFeatureLoader
   loadVolunteerFeature?: VolunteerFeatureLoader
-}
-
-const loadProductionScheduleFeature: ScheduleFeatureLoader = async () => {
-  const feature = await import('./features/schedule/scheduleFeature')
-  return feature.createScheduleFeature()
 }
 
 const loadProductionVolunteerFeature: VolunteerFeatureLoader = async () => {
@@ -42,10 +42,17 @@ function loadOnce<T>(loader: () => Promise<T>) {
 
 export function createAppRoutes({
   sessionClient,
-  loadScheduleFeature = loadProductionScheduleFeature,
+  apiBaseUrl = '/api',
+  loadScheduleFeature,
   loadVolunteerFeature = loadProductionVolunteerFeature,
 }: AppRouteDependencies): RouteObject[] {
-  const schedule = loadOnce(loadScheduleFeature)
+  const loadProductionScheduleFeature: ScheduleFeatureLoader = async () => {
+    const feature = await import('./features/schedule/scheduleFeature')
+    return feature.createScheduleFeatureForApi(apiBaseUrl)
+  }
+  const schedule = loadOnce(
+    loadScheduleFeature ?? loadProductionScheduleFeature,
+  )
   const volunteers = loadOnce(loadVolunteerFeature)
 
   return [
@@ -109,8 +116,13 @@ export function createAppRoutes({
   ]
 }
 
-export function createAppRouter() {
+export function createAppRouter(runtimeConfig: RuntimeConfig) {
   return createBrowserRouter(
-    createAppRoutes({ sessionClient: new HttpSessionClient() }),
+    createAppRoutes({
+      apiBaseUrl: runtimeConfig.apiBaseUrl,
+      sessionClient: new HttpSessionClient(
+        appendApiPath(runtimeConfig.apiBaseUrl, '/session'),
+      ),
+    }),
   )
 }

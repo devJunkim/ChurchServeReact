@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>churchserve-react-api-development</UserSecretsId>
+    <ReactDist>$(MSBuildProjectDirectory)\..\..\dist\</ReactDist>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,5 +15,18 @@
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.14" />
   </ItemGroup>
+
+  <Target Name="IncludeReactBuild" BeforeTargets="ComputeFilesToPublish">
+    <Error Condition="!Exists('$(ReactDist)index.html')"
+           Text="React production output is missing. Run npm run build before dotnet publish." />
+    <ItemGroup>
+      <ReactDistFiles Include="$(ReactDist)**\*" />
+      <ResolvedFileToPublish Include="@(ReactDistFiles->'%(FullPath)')">
+        <RelativePath>wwwroot\%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
 
 </Project>
