@@ -1,10 +1,11 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import {
   parseServiceEventForm,
   type CreateServiceEventCommand,
   type ServiceEventFormErrors,
   type ServiceEventFormValues,
 } from './createServiceEvent'
+import { focusFirstInvalidControl } from '../../shared/accessibility/focusFirstInvalidControl'
 
 type ServiceEventFormProps = {
   isSubmitting?: boolean
@@ -33,12 +34,19 @@ export function ServiceEventForm({
   onDirtyChange,
   onSubmit,
 }: ServiceEventFormProps) {
+  const formRef = useRef<HTMLFormElement>(null)
   const [values, setValues] = useState<ServiceEventFormValues>(emptyValues)
   const [errors, setErrors] = useState<ServiceEventFormErrors>({})
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const displayedErrors = { ...errors, ...serverErrors }
   const showErrorSummary =
     hasSubmitted || Object.keys(serverErrors ?? {}).length > 0
+
+  useEffect(() => {
+    if (Object.keys(serverErrors ?? {}).length > 0) {
+      scheduleInvalidFocus(formRef.current)
+    }
+  }, [serverErrors])
 
   function updateField(field: keyof ServiceEventFormValues, value: string) {
     const nextValues = { ...values, [field]: value }
@@ -64,6 +72,7 @@ export function ServiceEventForm({
     const result = parseServiceEventForm(values)
     if (!result.valid) {
       setErrors(result.errors)
+      scheduleInvalidFocus(formRef.current)
       return
     }
 
@@ -92,6 +101,7 @@ export function ServiceEventForm({
       </div>
 
       <form
+        ref={formRef}
         className="service-event-form"
         noValidate
         aria-busy={isSubmitting}
@@ -218,4 +228,12 @@ export function ServiceEventForm({
 
 function descriptionIds(...ids: Array<string | undefined>): string {
   return ids.filter((id): id is string => Boolean(id)).join(' ')
+}
+
+function scheduleInvalidFocus(form: HTMLFormElement | null): void {
+  form?.ownerDocument.defaultView?.setTimeout(() => {
+    if (form.isConnected) {
+      focusFirstInvalidControl(form)
+    }
+  })
 }

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import type {
@@ -11,6 +11,7 @@ import { AssignmentStore } from './assignmentStore'
 import { AssignmentStoreProvider } from './AssignmentStoreProvider'
 import { AssignmentBoardPanel } from './AssignmentBoardPanel'
 import { buildServiceEvent } from '../../testing/serviceEventBuilder'
+import { expectNoAccessibilityViolations } from '../../testing/expectNoAccessibilityViolations'
 
 describe('AssignmentBoardPanel', () => {
   it('renders an empty configured-position state after loading', async () => {
@@ -40,7 +41,7 @@ describe('AssignmentBoardPanel', () => {
       },
     }
 
-    renderPanel(repository)
+    const { container } = renderPanel(repository)
     await user.selectOptions(
       await screen.findByLabelText('Volunteer'),
       'alex',
@@ -48,6 +49,11 @@ describe('AssignmentBoardPanel', () => {
     await user.click(screen.getByRole('button', { name: 'Assign' }))
 
     expect(screen.getByText('Saving…')).toBeVisible()
+    await waitFor(() =>
+      expect(
+        screen.getByRole('listitem', { name: 'Sound operator' }),
+      ).toHaveFocus(),
+    )
     expect(command).toMatchObject({
       positionId: 'sound-1',
       volunteerId: 'alex',
@@ -72,6 +78,8 @@ describe('AssignmentBoardPanel', () => {
     expect(screen.getByRole('status')).toHaveTextContent(
       'Alex Morgan was assigned.',
     )
+    expect(screen.getByRole('status')).toHaveAttribute('aria-atomic', 'true')
+    await expectNoAccessibilityViolations(container)
   })
 
   it('keeps assignments readable without rendering management controls', async () => {
@@ -119,7 +127,7 @@ function renderPanel(
   canManageSchedule = true,
 ) {
   const store = new AssignmentStore(repository, undefined, () => 'request-1')
-  render(
+  return render(
     <AssignmentStoreProvider store={store}>
       <AssignmentBoardPanel
         event={buildServiceEvent()}

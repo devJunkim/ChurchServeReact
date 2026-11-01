@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -121,13 +121,26 @@ describe('ChurchServe application shell', () => {
       await screen.findByRole('link', { name: 'View the schedule' }),
     )
 
-    expect(
-      await screen.findByRole('heading', {
-        level: 1,
-        name: 'Upcoming services',
-      }),
-    ).toBeVisible()
+    const heading = await screen.findByRole('heading', {
+      level: 1,
+      name: 'Upcoming services',
+    })
+    expect(heading).toBeVisible()
+    await waitFor(() => expect(heading).toHaveFocus())
     expect(screen.getByRole('link', { name: 'ChurchServe home' })).toBeVisible()
+    expect(document.querySelectorAll('main')).toHaveLength(1)
+  })
+
+  it('does not move focus when only the query string changes', async () => {
+    const router = renderRoute('/schedule')
+    const createLink = await screen.findByRole('link', {
+      name: 'Create service',
+    })
+    createLink.focus()
+
+    await router.navigate('/schedule?view=compact')
+
+    expect(createLink).toHaveFocus()
   })
 
   it('provides a recovery link for unknown routes', async () => {
@@ -251,6 +264,24 @@ describe('ChurchServe application shell', () => {
       await screen.findByRole('heading', { name: 'Upcoming services' }),
     ).toBeVisible()
     expect(router.state.location.pathname).toBe('/schedule')
+  })
+
+  it('connects sign-in validation errors and focuses the first invalid field', async () => {
+    const user = userEvent.setup()
+    const sessionClient: SessionClient = {
+      restore: vi.fn().mockResolvedValue(undefined),
+      signIn: vi.fn().mockResolvedValue(currentUser),
+      signOut: vi.fn().mockResolvedValue(undefined),
+    }
+    renderRoute('/sign-in', sessionClient)
+
+    await user.clear(await screen.findByLabelText('Email'))
+    await user.click(screen.getByRole('button', { name: 'Sign in' }))
+
+    const email = screen.getByLabelText('Email')
+    expect(email).toHaveAttribute('aria-invalid', 'true')
+    expect(email).toHaveAttribute('aria-describedby', 'email-error')
+    await waitFor(() => expect(email).toHaveFocus())
   })
 
   it('returns an anonymous user to the protected deep link after sign-in', async () => {

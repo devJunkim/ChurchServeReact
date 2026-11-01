@@ -108,6 +108,13 @@ describe('service event request states', () => {
     ).toBeVisible()
     expect(screen.queryByText('Do not render this field.')).not.toBeInTheDocument()
     expect(screen.getByLabelText('Service name')).toHaveValue('Prayer Night')
+    await waitFor(() =>
+      expect(screen.getByLabelText('Service name')).toHaveFocus(),
+    )
+    expect(screen.getByLabelText('Service name')).toHaveAttribute(
+      'aria-describedby',
+      'service-title-error',
+    )
   })
 
   it('lets the user keep editing or discard a dirty form', async () => {

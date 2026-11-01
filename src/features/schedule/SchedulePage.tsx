@@ -78,7 +78,7 @@ export function SchedulePage() {
               <p>Create an event when the next schedule is ready.</p>
             </section>
           ) : (
-            <ul className="event-grid">
+            <ul className="event-grid" aria-label="Service events">
               {state.events.map((event) => (
                 <li key={event.id}>
                   <ServiceEventCard event={event} />

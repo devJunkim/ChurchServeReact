@@ -47,7 +47,8 @@
 
 .auth-form input:focus-visible {
   border-color: #1683c4;
-  outline: 3px solid rgb(22 131 196 / 20%);
+  outline: 3px solid #005a9c;
+  outline-offset: 2px;
 }
 
 .auth-form button,
