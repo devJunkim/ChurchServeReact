@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ServiceEvent } from './serviceEvent'
 import {
   useAssignmentSnapshot,
@@ -22,6 +22,7 @@ export function AssignmentBoardPanel({
 }: AssignmentBoardPanelProps) {
   const store = useAssignmentStore()
   const snapshot = useAssignmentSnapshot()
+  const positionRows = useRef(new Map<string, HTMLLIElement>())
   const [selectedVolunteers, setSelectedVolunteers] = useState<
     Readonly<Record<string, string>>
   >({})
@@ -79,6 +80,7 @@ export function AssignmentBoardPanel({
             <p
               className={`assignment-notice ${board.notice.kind}`}
               role={board.notice.kind === 'success' ? 'status' : 'alert'}
+              aria-atomic="true"
             >
               {board.notice.message}
             </p>
@@ -90,11 +92,25 @@ export function AssignmentBoardPanel({
               const eligibleVolunteers = store.volunteersFor(position)
               const selectedVolunteer = selectedVolunteers[position.id] ?? ''
 
+              const headingId = `position-heading-${position.id}`
+
               return (
-                <li key={position.id}>
+                <li
+                  key={position.id}
+                  id={`position-${position.id}`}
+                  ref={(element) => {
+                    if (element) {
+                      positionRows.current.set(position.id, element)
+                    } else {
+                      positionRows.current.delete(position.id)
+                    }
+                  }}
+                  tabIndex={-1}
+                  aria-labelledby={headingId}
+                >
                   <div className="position-copy">
                     <span>{position.ministry}</span>
-                    <h3>{position.roleName}</h3>
+                    <h3 id={headingId}>{position.roleName}</h3>
                     <p>
                       <time dateTime={position.startsAt}>
                         {timeFormatter.format(new Date(position.startsAt))}
@@ -146,7 +162,7 @@ export function AssignmentBoardPanel({
                       <button
                         type="button"
                         disabled={!selectedVolunteer}
-                        onClick={() => {
+                        onClick={(clickEvent) => {
                           const result = store.assign(
                             position.id,
                             selectedVolunteer,
@@ -156,6 +172,9 @@ export function AssignmentBoardPanel({
                               ...current,
                               [position.id]: '',
                             }))
+                            clickEvent.currentTarget.ownerDocument.defaultView?.setTimeout(
+                              () => positionRows.current.get(position.id)?.focus(),
+                            )
                           }
                         }}
                       >

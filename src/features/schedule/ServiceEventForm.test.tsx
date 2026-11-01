@@ -2,12 +2,13 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ServiceEventForm } from './ServiceEventForm'
+import { expectNoAccessibilityViolations } from '../../testing/expectNoAccessibilityViolations'
 
 describe('ServiceEventForm', () => {
   it('reveals required errors without submitting an invalid form', async () => {
     const user = userEvent.setup()
     const onSubmit = vi.fn().mockResolvedValue(undefined)
-    render(<ServiceEventForm onSubmit={onSubmit} />)
+    const { container } = render(<ServiceEventForm onSubmit={onSubmit} />)
 
     await user.click(screen.getByRole('button', { name: 'Add to schedule' }))
 
@@ -20,6 +21,14 @@ describe('ServiceEventForm', () => {
       'true',
     )
     expect(screen.getByText('Enter a service name.')).toBeVisible()
+    await waitFor(() =>
+      expect(screen.getByLabelText('Service name')).toHaveFocus(),
+    )
+    expect(screen.getByLabelText('Service name')).toHaveAttribute(
+      'aria-describedby',
+      'service-title-error',
+    )
+    await expectNoAccessibilityViolations(container)
   })
 
   it('rejects whitespace-only names and locations', async () => {

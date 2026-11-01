@@ -44,7 +44,7 @@
 .back-link:focus-visible,
 .primary-link:focus-visible,
 .missing-event a:focus-visible {
-  outline: 3px solid #74c0fc;
+  outline: 3px solid #005a9c;
   outline-offset: 3px;
 }
 
@@ -202,7 +202,7 @@
 
 .form-field input:focus-visible {
   border-color: #087f5b;
-  outline: 3px solid #b2f2dc;
+  outline: 3px solid #005a9c;
   outline-offset: 1px;
 }
 
@@ -254,7 +254,7 @@
 }
 
 .form-actions button:focus-visible {
-  outline: 3px solid #74c0fc;
+  outline: 3px solid #005a9c;
   outline-offset: 3px;
 }
 
@@ -310,7 +310,7 @@
 }
 
 .discard-actions button:focus-visible {
-  outline: 3px solid #74c0fc;
+  outline: 3px solid #005a9c;
   outline-offset: 3px;
 }
 
@@ -362,7 +362,7 @@
 }
 
 .retry-action:focus-visible {
-  outline: 3px solid #74c0fc;
+  outline: 3px solid #005a9c;
   outline-offset: 3px;
 }
 
@@ -461,7 +461,7 @@
 }
 
 .event-action:focus-visible {
-  outline: 3px solid #74c0fc;
+  outline: 3px solid #005a9c;
   outline-offset: 3px;
 }
 
@@ -541,6 +541,11 @@
   background: #fff;
   gap: 1rem;
   grid-template-columns: minmax(12rem, 1fr) minmax(15rem, 1fr);
+}
+
+.position-list > li:focus-visible {
+  outline: 3px solid #005a9c;
+  outline-offset: 3px;
 }
 
 .position-copy span {
@@ -627,7 +632,7 @@
 
 .assignment-action select:focus-visible,
 .assignment-action button:focus-visible {
-  outline: 3px solid #74c0fc;
+  outline: 3px solid #005a9c;
   outline-offset: 2px;
 }
 

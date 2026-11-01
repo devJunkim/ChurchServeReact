@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
 import { SessionProvider } from './core/auth/SessionProvider'
 import { useSession } from './core/auth/sessionContext'
 import type { SessionClient } from './core/auth/sessionClient'
 import { hasPermission, PERMISSIONS } from './core/auth/session'
+import { useRouteFocus } from './shared/accessibility/useRouteFocus'
 import './styles/app.css'
 
 function navLinkClassName({ isActive }: { isActive: boolean }) {
@@ -23,9 +24,11 @@ export function App({ sessionClient }: AppProps) {
 }
 
 function AppShell() {
+  const mainContentRef = useRef<HTMLElement>(null)
   const { state, restore, signOut } = useSession()
   const [isSigningOut, setIsSigningOut] = useState(false)
   const [signOutError, setSignOutError] = useState<string>()
+  useRouteFocus(mainContentRef)
 
   async function endSession() {
     setIsSigningOut(true)
@@ -93,7 +96,7 @@ function AppShell() {
           </div>
         </header>
 
-        <main id="main-content" tabIndex={-1}>
+        <main id="main-content" ref={mainContentRef} tabIndex={-1}>
           {state.status === 'checking' ? (
             <p className="session-panel" role="status">
               Restoring your ChurchServe session…

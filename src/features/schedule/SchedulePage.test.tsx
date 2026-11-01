@@ -8,12 +8,13 @@ import { InMemoryServiceEventRepository } from './inMemoryServiceEventRepository
 import { ScheduleStore } from './scheduleStore'
 import type { ServiceEventRepository } from './serviceEventRepository'
 import { TestingSessionProvider } from '../../testing/TestingSessionProvider'
+import { expectNoAccessibilityViolations } from '../../testing/expectNoAccessibilityViolations'
 
 function renderSchedule(
   repository: ServiceEventRepository = new InMemoryServiceEventRepository(),
 ) {
   const store = new ScheduleStore(repository)
-  render(
+  return render(
     <MemoryRouter>
       <TestingSessionProvider>
         <ScheduleStoreProvider store={store}>
@@ -26,7 +27,7 @@ function renderSchedule(
 
 describe('SchedulePage', () => {
   it('renders the event collection with detail links', async () => {
-    renderSchedule()
+    const { container } = renderSchedule()
 
     expect(await screen.findAllByRole('article')).toHaveLength(2)
     expect(
@@ -38,6 +39,8 @@ describe('SchedulePage', () => {
     expect(
       screen.getByRole('region', { name: 'Current schedule summary' }),
     ).toHaveTextContent('5 open positions')
+    expect(screen.getByRole('list', { name: 'Service events' })).toBeVisible()
+    await expectNoAccessibilityViolations(container)
   })
 
   it('shows a loading message without rendering an empty state', () => {
